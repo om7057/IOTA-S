@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply font-sans antialiased text-gray-700 bg-slate-50 min-h-screen;
+  }
+}
+
+@layer components {
+  /* Modern Card Styles */
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-gray-100/50 backdrop-blur-sm transition-all duration-300;
+  }
+  
+  .card-hover {
+    @apply hover:shadow-elevated hover:-translate-y-1 hover:border-sky-200;
+  }
+  
+  /* Button Styles */
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-gray-700 border border-gray-200 shadow-soft hover:bg-gray-50 hover:border-gray-300 focus:ring-gray-500;
+  }
+  
+  .btn-accent {
+    @apply bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-500;
+  }
+  
+  /* Input Styles */
+  .input {
+    @apply w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200;
+  }
+  
+  /* Badge Styles */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-sky-100 text-sky-700;
+  }
+  
+  .badge-success {
+    @apply bg-emerald-100 text-emerald-700;
+  }
+  
+  .badge-warning {
+    @apply bg-amber-100 text-amber-700;
+  }
+  
+  /* Glass Effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-lg border border-white/20;
+  }
+  
+  /* Accent Text */
+  .gradient-text {
+    @apply text-sky-600 font-semibold;
+  }
+  
+  /* Progress Bar */
+  .progress-bar {
+    @apply h-2 rounded-full bg-gray-100 overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full rounded-full bg-sky-500 transition-all duration-500;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+} 

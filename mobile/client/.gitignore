@@ -1,0 +1,83 @@
+# ============================================
+# React Native Expo Mobile App .gitignore
+# ============================================
+
+# =========== Dependencies ===========
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+.pnpm-lock.yaml
+
+# =========== Expo ===========
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.expo-shared/
+
+# =========== Native Mobile ===========
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.ipa
+*.apk
+ios/
+android/
+.gradle/
+.gradle
+
+# =========== Metro ===========
+.metro-health-check*
+.metro-bundler-cache
+
+# =========== Environment ===========
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# =========== IDE & Editor ===========
+.vscode/
+.idea/
+*.code-workspace
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.sublime-project
+*.sublime-workspace
+
+# =========== TypeScript ===========
+*.tsbuildinfo
+
+# =========== Build & Dist ===========
+build/
+dist/
+.next/
+
+# =========== Testing ===========
+coverage/
+.nyc_output/
+.jest/
+
+# =========== Logs ===========
+logs/
+*.log
+
+# =========== Misc ===========
+app-example
+*.pem
+.babelrc.js
