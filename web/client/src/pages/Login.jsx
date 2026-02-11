@@ -1,107 +1,48 @@
-import { SignIn, SignUp, SignedIn, SignedOut } from "@clerk/clerk-react";
-import { useState } from "react";
+import { SignIn, SignedIn, SignedOut } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { Shield, CheckCircle } from "lucide-react";
 
 const Login = () => {
-  const [isSigningUp, setIsSigningUp] = useState(false);
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="relative w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-600 mb-4">
-            <Shield className="w-8 h-8 text-white" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+      <div className="w-full max-w-md">
+        <SignedOut>
+          {/* Show default Clerk SignIn component */}
+          <SignIn 
+            redirectUrl="/"
+            appearance={{
+              variables: {
+                colorPrimary: "#0ea5e9",
+                colorText: "#1f2937",
+                colorTextSecondary: "#6b7280",
+                colorBackground: "#ffffff",
+                colorInputBackground: "#f3f4f6",
+                colorInputText: "#1f2937",
+                colorDanger: "#ef4444",
+                borderRadius: "0.75rem",
+              }
+            }}
+          />
+        </SignedOut>
+
+        <SignedIn>
+          <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100 text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <svg className="w-8 h-8 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Welcome!</h3>
+            <p className="text-gray-600 mb-8">You're all set and ready to go</p>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors"
+            >
+              Go to Dashboard
+            </button>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Safe Space</h1>
-          <p className="text-gray-500 mt-2">Learn. Play. Stay Safe.</p>
-        </div>
-
-        {/* Card */}
-        <div className="card p-8">
-          <SignedOut>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 text-center">
-                {isSigningUp ? "Create Account" : "Welcome Back"}
-              </h2>
-              <p className="text-center text-gray-500 mt-1">
-                {isSigningUp 
-                  ? "Start your safety learning journey" 
-                  : "Continue your learning adventure"}
-              </p>
-            </div>
-
-            {/* Clerk Auth Component */}
-            <div className="clerk-container">
-              {isSigningUp ? (
-                <SignUp 
-                  redirectUrl="/" 
-                  appearance={{
-                    elements: {
-                      rootBox: "w-full",
-                      card: "shadow-none p-0",
-                      headerTitle: "hidden",
-                      headerSubtitle: "hidden",
-                      socialButtonsBlockButton: "border border-gray-200 hover:bg-gray-50",
-                      formFieldInput: "rounded-xl border-gray-200 focus:border-sky-500 focus:ring-sky-500",
-                      formButtonPrimary: "bg-sky-600 hover:bg-sky-700 rounded-xl",
-                    }
-                  }}
-                />
-              ) : (
-                <SignIn 
-                  redirectUrl="/"
-                  appearance={{
-                    elements: {
-                      rootBox: "w-full",
-                      card: "shadow-none p-0",
-                      headerTitle: "hidden",
-                      headerSubtitle: "hidden",
-                      socialButtonsBlockButton: "border border-gray-200 hover:bg-gray-50",
-                      formFieldInput: "rounded-xl border-gray-200 focus:border-sky-500 focus:ring-sky-500",
-                      formButtonPrimary: "bg-sky-600 hover:bg-sky-700 rounded-xl",
-                    }
-                  }}
-                />
-              )}
-            </div>
-
-            {/* Toggle Sign In/Up */}
-            <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-              <button
-                onClick={() => setIsSigningUp(!isSigningUp)}
-                className="text-sky-600 hover:text-sky-700 font-medium transition-colors"
-              >
-                {isSigningUp 
-                  ? "Already have an account? Sign In" 
-                  : "Don't have an account? Sign Up"}
-              </button>
-            </div>
-          </SignedOut>
-
-          <SignedIn>
-            <div className="text-center py-8">
-              <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-7 h-7 text-emerald-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">You're signed in!</h3>
-              <p className="text-gray-500 mb-6">Ready to start learning?</p>
-              <button
-                onClick={() => navigate('/')}
-                className="btn btn-primary"
-              >
-                Go to Dashboard
-              </button>
-            </div>
-          </SignedIn>
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-gray-400 text-sm mt-6">
-          By continuing, you agree to our Terms of Service
-        </p>
+        </SignedIn>
       </div>
     </div>
   );
