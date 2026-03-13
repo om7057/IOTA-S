@@ -1,8 +1,17 @@
-import { SignIn, SignedIn, SignedOut } from "@clerk/clerk-react";
+import { SignIn, SignedIn, SignedOut, useClerk } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { isSignedIn, isLoaded } = useClerk();
+
+  // Auto-redirect to home if already signed in
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      navigate("/", { replace: true });
+    }
+  }, [isLoaded, isSignedIn, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
@@ -36,7 +45,7 @@ const Login = () => {
             <h3 className="text-2xl font-bold text-gray-900 mb-2">Welcome!</h3>
             <p className="text-gray-600 mb-8">You're all set and ready to go</p>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/', { replace: true })}
               className="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors"
             >
               Go to Dashboard

@@ -1,13 +1,29 @@
 import React from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Lightbulb, BarChart3, Newspaper, CheckCircle, Flame, Shield, ArrowRight } from "lucide-react";
+import { BookOpen, Lightbulb, BarChart3, Newspaper, CheckCircle, Flame, Shield, Smile, BookMarked, ArrowRight } from "lucide-react";
 
 function Home() {
   const { user, isSignedIn } = useUser();
   const navigate = useNavigate();
 
   const quickActions = [
+    {
+      title: "How Are You Feeling?",
+      description: "Log your mood for today",
+      icon: <Smile className="w-6 h-6" />,
+      bgColor: "bg-pink-50",
+      iconColor: "text-pink-600",
+      path: "/mood"
+    },
+    {
+      title: "My Journal",
+      description: "Write your private thoughts",
+      icon: <BookMarked className="w-6 h-6" />,
+      bgColor: "bg-purple-50",
+      iconColor: "text-purple-600",
+      path: "/journal"
+    },
     {
       title: "Safety Stories",
       description: "Learn through interactive stories",

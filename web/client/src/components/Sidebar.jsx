@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, BookOpen, BarChart3, Newspaper, Lightbulb, Shield, X, Zap } from "lucide-react";
+import { Home, BookOpen, BarChart3, Newspaper, Lightbulb, Shield, X, Smile, BookMarked, Zap } from "lucide-react";
 
 const Sidebar = ({ onClose, isMobile }) => {
   const navigate = useNavigate();
@@ -8,6 +8,8 @@ const Sidebar = ({ onClose, isMobile }) => {
   // Navigation items with Lucide icons
   const sidebarItems = [
     { name: "Home", path: "/", icon: <Home className="w-5 h-5" /> },
+    { name: "My Feelings", path: "/mood", icon: <Smile className="w-5 h-5" /> },
+    { name: "My Journal", path: "/journal", icon: <BookMarked className="w-5 h-5" /> },
     { name: "Safety Stories", path: "/story-learning", icon: <BookOpen className="w-5 h-5" /> },
     { name: "Leaderboard", path: "/leaderboard", icon: <BarChart3 className="w-5 h-5" /> },
     { name: "Live", path: "/live", icon: <Newspaper className="w-5 h-5" /> },

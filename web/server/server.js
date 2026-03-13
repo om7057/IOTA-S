@@ -12,6 +12,8 @@ import leaderboardRoutes from './routes/leaderboardRoutes.js';
 import progressRoutes from './routes/progressRoutes.js'
 import newsStoryRoutes from './routes/newsStoryRoutes.js';
 import seedRoutes from './routes/seedRoutes.js';
+import moodRoutes from './routes/moodRoutes.js';
+import journalRoutes from './routes/journalRoutes.js';
 
 
 dotenv.config();
@@ -42,6 +44,8 @@ app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/news-stories', newsStoryRoutes);
 app.use('/api/quiz-progress', progressRoutes);
 app.use('/api/seed', seedRoutes);
+app.use('/api/moods', moodRoutes);
+app.use('/api/journals', journalRoutes);
 
 
 app.use((req, res) => {
