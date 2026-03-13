@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useEmotionDetection from "../components/useEmotionDetection";
-import EmotionChart from "./EmotionChart";
+import StoryEmotionMonitor from "./StoryEmotionMonitor";
+import EmotionSummary from "./EmotionSummary";
 import { Loader2, AlertCircle, Search, Sparkles, ChevronLeft, Lightbulb, Video } from "lucide-react";
 
 const StoryPlayer = () => {
@@ -160,19 +161,8 @@ const StoryPlayer = () => {
           <p className="text-gray-500">{story.description}</p>
         </div>
 
-        {/* Webcam Feed */}
-        <div className="absolute top-6 right-6 w-44 rounded-xl overflow-hidden shadow-lg border-2 border-sky-200">
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            className="w-full h-32 object-cover"
-          />
-          <div className="bg-sky-500 text-white text-xs py-1.5 text-center font-medium flex items-center justify-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
-            Emotion Tracker
-          </div>
-        </div>
+        {/* Emotion Monitor Widget */}
+        <StoryEmotionMonitor videoRef={videoRef} emotionTimeline={emotionTimeline} />
 
         {/* Progress Bar */}
         <div className="mb-6">
@@ -226,15 +216,15 @@ const StoryPlayer = () => {
           )}
         </div>
 
-        {/* Emotion Chart & Quiz Button */}
+        {/* Emotion Summary & Quiz Button */}
         {storyCompleted && (
-          <div className="mt-8 p-6 bg-sky-50 rounded-2xl">
-            <h2 className="text-xl font-bold text-center text-gray-900 mb-6">Your Emotion Journey</h2>
-            <EmotionChart emotionTimeline={emotionTimeline} />
-            <div className="mt-8 text-center">
+          <div className="mt-8 space-y-6">
+            <EmotionSummary emotionTimeline={emotionTimeline} storyTitle={story.title} />
+            
+            <div className="text-center pt-4">
               <button
                 onClick={() => navigate(`/quiz/${storyId}`)}
-                className="btn bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 hover:shadow-xl"
+                className="btn bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 hover:shadow-xl text-lg px-8"
               >
                 <Lightbulb className="w-5 h-5 mr-2" />
                 Take the Quiz

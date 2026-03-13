@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
-import { Frown, Smile, Heart, ZapOff, HelpCircle, Laugh, Wind, Moon } from 'lucide-react';
+import { Frown, Smile, Heart, ZapOff, HelpCircle, Laugh, Wind, Moon, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
+import FacialEmotionDetector from './FacialEmotionDetector';
 
 const MoodTracker = () => {
   const { user } = useUser();
@@ -13,6 +14,7 @@ const MoodTracker = () => {
   const [todayMood, setTodayMood] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showFacialDetector, setShowFacialDetector] = useState(false);
 
   // Child-friendly mood options with colors
   const moodOptions = [
@@ -96,6 +98,14 @@ const MoodTracker = () => {
     );
   };
 
+  const handleEmotionDetected = (detectedMood, confidence) => {
+    setSelectedMood(detectedMood);
+    // Auto-set intensity based on confidence (50-100% confidence maps to 1-5 intensity)
+    const detectedIntensity = Math.max(1, Math.round((confidence / 100) * 5));
+    setIntensity(detectedIntensity);
+    toast.success(`Great! I detected you're ${detectedMood}! 🎉`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Today's Mood Status */}
@@ -143,9 +153,18 @@ const MoodTracker = () => {
         <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-6">How are you feeling today?</h3>
 
+          {/* Camera Button */}
+          <button
+            onClick={() => setShowFacialDetector(true)}
+            className="w-full mb-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 group"
+          >
+            <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span>Scan Your Face 📸</span>
+          </button>
+
           {/* Mood Selection */}
           <div className="mb-8">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Pick your mood:</p>
+            <p className="text-sm font-semibold text-gray-700 mb-3">Or pick your mood:</p>
             <div className="grid grid-cols-4 gap-3">
               {moodOptions.map(mood => (
                 <button
@@ -241,6 +260,14 @@ const MoodTracker = () => {
           )}
         </div>
       )}
+
+      {/* Facial Emotion Detector Modal */}
+      <FacialEmotionDetector
+        isOpen={showFacialDetector}
+        onClose={() => setShowFacialDetector(false)}
+        onEmotionSelected={handleEmotionDetected}
+        moodOptions={moodOptions}
+      />
     </div>
   );
 };

@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import { SignedIn, SignedOut, useClerk } from "@clerk/clerk-react";
+import { UserProvider, useUserProfile } from "./contexts/UserContext";
 import Login from "./pages/Login";
+import AgeSelection from "./pages/AgeSelection";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import ProfilePage from "./pages/ProfilePage";
@@ -18,7 +20,33 @@ import QuizLandingPage from "./pages/QuizLandingPage";
 import { Toaster } from "react-hot-toast";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 
-const App = () => {
+// Age gate wrapper component
+const AgeGateWrapper = ({ children }) => {
+  const { age, loading } = useUserProfile();
+  const { isSignedIn, loaded } = useClerk();
+
+  // Still loading user profile
+  if (!loaded || loading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "linear-gradient(to right, #f0f9ff, #dbeafe)" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: "64px", height: "64px", border: "4px solid #bae6fd", borderTop: "4px solid #0284c7", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto", marginBottom: "16px" }}></div>
+          <p style={{ fontSize: "20px", fontWeight: "600", color: "#374151" }}>Loading your profile...</p>
+          <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  // Signed in but no age set
+  if (isSignedIn && !age) {
+    return <AgeSelection />;
+  }
+
+  return children;
+};
+
+const AppContent = () => {
   const { loaded, isSignedIn } = useClerk();
   const [emotionTimeLine, setEmotionTimeLine] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -74,208 +102,219 @@ const App = () => {
         }}
       />
       
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/sign-in" element={<Login />} />
-        <Route path="/sign-up" element={<Login />} />
+      <AgeGateWrapper>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/sign-in" element={<Login />} />
+          <Route path="/sign-up" element={<Login />} />
+          <Route path="/age-selection" element={<AgeSelection />} />
 
-        <Route 
-          path="/" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <Home />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/mood" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <div className="max-w-2xl mx-auto">
-                    <MoodTracker />
-                  </div>
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/journal" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <JournalPage />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/profile" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <ProfilePage />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/stories/:levelId" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <Stories emotionTimeLine={emotionTimeLine} setEmotionTimeLine={setEmotionTimeLine} />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/levels/:topicId" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <Levels />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/quiz/:storyId" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <Quiz />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/leaderboard" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <Leaderboard />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/live" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <Live />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/story-play/:storyId" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <StoryPlayer emotionTimeline={emotionTimeLine} setEmotionTimeline={setEmotionTimeLine} />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/story-learning" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <StoryLearning />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route 
-          path="/quizzes" 
-          element={
-            <>
-              <SignedIn>
-                <Layout setIsLoading={handleLoading}>
-                  <QuizLandingPage />
-                </Layout>
-              </SignedIn>
-              <SignedOut>
-                <Navigate to="/sign-in" replace />
-              </SignedOut>
-            </>
-          } 
-        />
-        
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route 
+            path="/" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <Home />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/mood" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <div className="max-w-2xl mx-auto">
+                      <MoodTracker />
+                    </div>
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/journal" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <JournalPage />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/profile" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <ProfilePage />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/stories/:levelId" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <Stories emotionTimeLine={emotionTimeLine} setEmotionTimeLine={setEmotionTimeLine} />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/levels/:topicId" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <Levels />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/quiz/:storyId" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <Quiz />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/leaderboard" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <Leaderboard />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/live" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <Live />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/story-play/:storyId" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <StoryPlayer emotionTimeline={emotionTimeLine} setEmotionTimeline={setEmotionTimeLine} />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/story-learning" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <StoryLearning />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route 
+            path="/quizzes" 
+            element={
+              <>
+                <SignedIn>
+                  <Layout setIsLoading={handleLoading}>
+                    <QuizLandingPage />
+                  </Layout>
+                </SignedIn>
+                <SignedOut>
+                  <Navigate to="/sign-in" replace />
+                </SignedOut>
+              </>
+            } 
+          />
+          
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AgeGateWrapper>
     </div>
+  );
+};
+
+const App = () => {
+  return (
+    <UserProvider>
+      <AppContent />
+    </UserProvider>
   );
 };
 

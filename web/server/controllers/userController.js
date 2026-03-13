@@ -120,3 +120,32 @@ export const getUserProgress = async (req, res) => {
     res.status(500).json({ error: "Internal server error", details: error.message });
   }
 };
+
+export const setUserAge = async (req, res) => {
+  try {
+    const { age } = req.body;
+    console.log(`Setting age for user: ${req.params.clerkId}, Age: ${age}`);
+
+    if (!age || age < 8 || age > 99) {
+      return res.status(400).json({ error: "Invalid age. Must be between 8 and 99" });
+    }
+
+    const userType = age >= 13 ? 'teenager' : 'child';
+    
+    const user = await User.findOneAndUpdate(
+      { clerkId: req.params.clerkId },
+      { age, userType },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    console.log("User age set:", user);
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error setting user age:", error);
+    res.status(500).json({ error: "Internal server error", details: error.message });
+  }
+};
