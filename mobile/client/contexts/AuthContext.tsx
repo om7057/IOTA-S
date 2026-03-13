@@ -1,69 +1,88 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 
 // API URL for the backend server
-const API_URL = 'http://192.168.95.229:3000/api';
+// Android emulator: 10.0.2.2 (host machine)
+// iOS simulator: localhost or 127.0.0.1
+// Physical device: Use your machine's IP address
+const API_URL = 'http://10.0.2.2:3000/api';
 
-interface UserProfile extends SupabaseUser {
-  display_name?: string;
+// OAuth discovery  
+const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
+
+WebBrowser.maybeCompleteAuthSession();
+
+interface User {
+  id: string;
+  email: string;
+  displayName?: string;
   age?: number;
   gender?: string;
-  created_at?: string;
-  updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface Session {
+  user: User;
+  token: string;
 }
 
 interface AuthContextType {
   session: Session | null;
-  user: UserProfile | null;
+  user: User | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string, age: number, gender: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
   fetchUserProfile: () => Promise<void>;
-  userProfile: UserProfile | null;
+  userProfile: User | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Initialize session from storage
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile();
+    const initializeAuth = async () => {
+      try {
+        const storedSession = await AsyncStorage.getItem('authSession');
+        if (storedSession) {
+          const sessionData = JSON.parse(storedSession);
+          setSession(sessionData);
+          setUser(sessionData.user);
+          await fetchUserProfile(sessionData.token);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile();
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    initializeAuth();
   }, []);
 
-  const fetchUserProfile = async () => {
-    if (!session?.user?.id) return;
-    
+  const fetchUserProfile = async (token?: string) => {
+    if (!session?.token && !token) return;
+
+    const authToken = token || session?.token;
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-      
-      if (error) throw error;
-      setUser(data);
+      const response = await fetch(`${API_URL}/users/me`, {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data);
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error);
     }
@@ -79,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   try {
     console.log('Attempting signup with:', { email, displayName, age, gender });
 
-    const response = await fetch(`${API_URL}/signup`, {
+    const response = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -102,12 +121,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await response.json();
     console.log('Server response:', data);
 
-    if (!data.user) {
+    if (!data.user || !data.token) {
       console.error('Invalid response structure:', data);
       throw new Error('Invalid response from server');
     }
 
-    // You can store user info if needed (your logic)
+    const sessionData = { user: data.user, token: data.token };
+    await AsyncStorage.setItem('authSession', JSON.stringify(sessionData));
+    setSession(sessionData);
     setUser(data.user);
     console.log('Signup successful:', { user: data.user });
   } catch (error) {
@@ -117,17 +138,105 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
+    try {
+      const response = await fetch(`${API_URL}/auth/signin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to sign in');
+      }
+
+      const data = await response.json();
+      const sessionData = { user: data.user, token: data.token };
+      await AsyncStorage.setItem('authSession', JSON.stringify(sessionData));
+      setSession(sessionData);
+      setUser(data.user);
+    } catch (error) {
+      console.error('Sign in error:', error);
+      throw error;
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    setUser(null);
+    try {
+      const token = session?.token;
+      if (token) {
+        await fetch(`${API_URL}/auth/signout`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+      await AsyncStorage.removeItem('authSession');
+      setSession(null);
+      setUser(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
+      throw error;
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      // Get the Google OAuth URL from our backend
+      const response = await fetch(`${API_URL}/auth/google/mobile`);
+      const data = await response.json();
+      
+      if (!data.authUrl) {
+        throw new Error('Failed to get Google auth URL');
+      }
+
+      // Use AuthSession to handle the OAuth flow
+      const result = await AuthSession.startAsync({
+        authUrl: data.authUrl,
+        returnUrl: 'myapp://auth/callback',
+      });
+
+      if (result.type !== 'success') {
+        throw new Error('Google authentication failed');
+      }
+
+      // Extract the authorization code from the redirect URL
+      const url = new URL(result.url);
+      const code = url.searchParams.get('code');
+
+      if (!code) {
+        throw new Error('No authorization code received');
+      }
+
+      // Exchange code for app token
+      const tokenResponse = await fetch(`${API_URL}/auth/google/callback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          platform: 'mobile',
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const error = await tokenResponse.json();
+        throw new Error(error.error || 'Google sign in failed');
+      }
+
+      const tokenData = await tokenResponse.json();
+      const sessionData = { user: tokenData.user, token: tokenData.token };
+      await AsyncStorage.setItem('authSession', JSON.stringify(sessionData));
+      setSession(sessionData);
+      setUser(tokenData.user);
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      throw error;
+    }
   };
 
   return (
@@ -136,7 +245,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user, 
       signIn, 
       signUp, 
-      signOut, 
+      signOut,
+      signInWithGoogle,
       loading,
       fetchUserProfile,
       userProfile: user

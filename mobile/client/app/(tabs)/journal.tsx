@@ -15,7 +15,6 @@ import {
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URL } from '../../constants';
-import { supabase } from '../../lib/supabase';
 
 interface JournalEntry {
   entry_id: string;
@@ -219,19 +218,12 @@ export default function JournalScreen() {
     try {
       setLoadingGroups(true);
       
-      // Get user ID with proper error handling
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData?.user?.id) {
+      // Get user ID and token from session
+      if (!session?.user?.id || !session?.access_token) {
         throw new Error('User not authenticated');
       }
-      const userId = userData.user.id;
-      
-      // Get session token with proper error handling
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session?.access_token) {
-        throw new Error('No valid session');
-      }
-      const token = sessionData.session.access_token;
+      const userId = session.user.id;
+      const token = session.access_token;
       
       // First analyze queries to get group suggestions
       const analyzeResponse = await fetch(`${API_URL}/api/users/${userId}/analyze-queries`, {

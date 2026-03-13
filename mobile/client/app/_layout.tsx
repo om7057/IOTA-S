@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { UserProvider, useUserProfile } from '../contexts/UserContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -16,6 +17,7 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { session, loading } = useAuth();
+  const { hasAge, loading: userLoading } = useUserProfile();
   const segments = useSegments();
   const router = useRouter();
   const [fontsLoaded] = useFonts({
@@ -29,21 +31,28 @@ function RootLayoutNav() {
   }, [fontsLoaded]);
 
   useEffect(() => {
-    if (loading || !fontsLoaded) return;
+    if (loading || userLoading || !fontsLoaded) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
+    const inAgeSelection = segments[0] === 'age-selection';
 
-    if (session && !inTabsGroup) {
-      // If user is signed in and not in tabs group, redirect to tabs
-      router.replace('/(tabs)');
+    if (session && !inTabsGroup && !inAgeSelection) {
+      // If user is signed in, check if they have age set
+      if (hasAge) {
+        // If they have age, go to tabs
+        router.replace('/(tabs)');
+      } else {
+        // If they don't have age, go to age selection
+        router.replace('/age-selection');
+      }
     } else if (!session && !inAuthGroup) {
       // If user is not signed in and not in auth group, redirect to sign in
       router.replace('/(auth)/sign-in');
     }
-  }, [session, loading, segments, fontsLoaded]);
+  }, [session, loading, userLoading, segments, fontsLoaded, hasAge]);
 
-  if (!fontsLoaded || loading) {
+  if (!fontsLoaded || loading || userLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
         <ActivityIndicator size="large" color="#000" />
@@ -61,10 +70,14 @@ function RootLayoutNav() {
   );
 }
 
-export default function RootLayout() {
+function RootLayoutWrapper() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <UserProvider>
+        <RootLayoutNav />
+      </UserProvider>
     </AuthProvider>
   );
 }
+
+export default RootLayoutWrapper;
