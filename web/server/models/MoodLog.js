@@ -1,28 +1,40 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../utils/database.js';
 
-const moodLogSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  clerkId: { type: String, required: true },
-  
-  // Mood data
-  mood: { 
-    type: String, 
-    enum: ['happy', 'sad', 'angry', 'scared', 'confused', 'excited', 'calm', 'tired'],
-    required: true 
+export const MoodLog = sequelize.define('MoodLog', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
-  moodIntensity: { type: Number, min: 1, max: 5, required: true }, // 1-5 scale
-  
-  // Optional mood tags/reasons
-  tags: [String], // e.g., ['school', 'friends', 'family', 'homework', 'tired']
-  notes: String, // Short optional note about why they felt this way
-  
-  // Timestamp
-  createdAt: { type: Date, default: Date.now },
-  date: { type: Date, required: true } // Date of mood entry
+  userId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    index: true
+  },
+  mood: {
+    type: DataTypes.ENUM('happy', 'sad', 'angry', 'anxious', 'calm', 'excited', 'confused', 'content')
+  },
+  moodIntensity: {
+    type: DataTypes.INTEGER,
+    validate: { min: 1, max: 10 }
+  },
+  tags: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: []
+  },
+  notes: DataTypes.TEXT,
+  date: {
+    type: DataTypes.DATE,
+    defaultValue: () => new Date()
+  }
+}, {
+  timestamps: true,
+  tableName: 'mood_logs',
+  indexes: [
+    { fields: ['userId', 'date'], name: 'idx_moodlog_user_date' },
+    { fields: ['userId', 'createdAt'], name: 'idx_moodlog_user_created' }
+  ]
 });
 
-// Index for efficient querying
-moodLogSchema.index({ clerkId: 1, date: -1 });
-moodLogSchema.index({ clerkId: 1, createdAt: -1 });
-
-export const MoodLog = mongoose.model('MoodLog', moodLogSchema);
+export default MoodLog;

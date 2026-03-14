@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/supabase');
+const db = require('../config/database');
 const { verifyToken } = require('../middleware/auth');
 
 router.post('/posts/:postId/like', verifyToken, async (req, res) => {
@@ -8,64 +8,35 @@ router.post('/posts/:postId/like', verifyToken, async (req, res) => {
     const { postId } = req.params;
     const userId = req.user.id;
 
-    const { data: existingLike, error: likeCheckError } = await supabase
-      .from('likes')
-      .select('*')
-      .eq('post_id', postId)
-      .eq('user_id', userId)
-      .single();
-
-    if (likeCheckError && likeCheckError.code !== 'PGRST116') {  
-              console.error('Error checking like:', likeCheckError);
-      return res.status(400).json({ error: likeCheckError.message });
-    }
+    const existingLike = await db.query(
+      'SELECT * FROM likes WHERE post_id = $1 AND user_id = $2',
+      [postId, userId]
+    );
 
     let result;
     
-    if (existingLike) {
-      const { error: unlikeError } = await supabase
-        .from('likes')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', userId);
-
-      if (unlikeError) {
-        console.error('Error removing like:', unlikeError);
-        return res.status(400).json({ error: unlikeError.message });
-      }
-
+    if (existingLike.rows.length > 0) {
+      await db.query(
+        'DELETE FROM likes WHERE post_id = $1 AND user_id = $2',
+        [postId, userId]
+      );
       result = { liked: false };
     } else {
-      const { data: newLike, error: likeError } = await supabase
-        .from('likes')
-        .insert([{
-          post_id: postId,
-          user_id: userId
-        }])
-        .select()
-        .single();
-
-      if (likeError) {
-        console.error('Error adding like:', likeError);
-        return res.status(400).json({ error: likeError.message });
-      }
-
-      result = { liked: true, like_data: newLike };
+      await db.query(
+        'INSERT INTO likes (post_id, user_id) VALUES ($1, $2)',
+        [postId, userId]
+      );
+      result = { liked: true };
     }
 
-    const { count, error: countError } = await supabase
-      .from('likes')
-      .select('*', { count: 'exact' })
-      .eq('post_id', postId);
-
-    if (countError) {
-      console.error('Error getting like count:', countError);
-      return res.status(400).json({ error: countError.message });
-    }
+    const countResult = await db.query(
+      'SELECT COUNT(*) FROM likes WHERE post_id = $1',
+      [postId]
+    );
 
     res.json({
       ...result,
-      likes_count: count
+      likes_count: parseInt(countResult.rows[0].count)
     });
   } catch (error) {
     console.error('Error toggling like:', error);
@@ -78,31 +49,19 @@ router.get('/posts/:postId/like', verifyToken, async (req, res) => {
     const { postId } = req.params;
     const userId = req.user.id;
 
-    const { data, error } = await supabase
-      .from('likes')
-      .select('*')
-      .eq('post_id', postId)
-      .eq('user_id', userId)
-      .single();
+    const likeResult = await db.query(
+      'SELECT * FROM likes WHERE post_id = $1 AND user_id = $2',
+      [postId, userId]
+    );
 
-    if (error && error.code !== 'PGRST116') {  
-      console.error('Error checking like status:', error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    const { count, error: countError } = await supabase
-      .from('likes')
-      .select('*', { count: 'exact' })
-      .eq('post_id', postId);
-
-    if (countError) {
-      console.error('Error getting like count:', countError);
-      return res.status(400).json({ error: countError.message });
-    }
+    const countResult = await db.query(
+      'SELECT COUNT(*) FROM likes WHERE post_id = $1',
+      [postId]
+    );
 
     res.json({
-      liked: !!data,
-      likes_count: count
+      liked: likeResult.rows.length > 0,
+      likes_count: parseInt(countResult.rows[0].count)
     });
   } catch (error) {
     console.error('Error checking like status:', error);

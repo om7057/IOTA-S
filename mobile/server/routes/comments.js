@@ -1,31 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/supabase');
+const db = require('../config/database');
 const { verifyToken } = require('../middleware/auth');
 
 router.get('/posts/:postId/comments', async (req, res) => {
   try {
     const { postId } = req.params;
 
-    const { data, error } = await supabase
-      .from('comments')
-      .select(`
-        *,
-        users:user_id (
-          id,
-          display_name,
-          email
-        )
-      `)
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true });
+    const result = await db.query(
+      `SELECT c.*, u.id as user_id, u.display_name, u.email
+       FROM comments c
+       JOIN users u ON c.user_id = u.id
+       WHERE c.post_id = $1
+       ORDER BY c.created_at ASC`,
+      [postId]
+    );
 
-    if (error) {
-      console.error('Error fetching comments:', error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    res.json(data);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching comments:', error);
     res.status(500).json({ error: error.message });
@@ -38,35 +29,22 @@ router.post('/posts/:postId/comments', verifyToken, async (req, res) => {
     const { content } = req.body;
     const userId = req.user.id;
 
-    const { data: comment, error: commentError } = await supabase
-      .from('comments')
-      .insert([{
-        post_id: postId,
-        user_id: userId,
-        content
-      }])
-      .select()
-      .single();
+    const commentResult = await db.query(
+      'INSERT INTO comments (post_id, user_id, content) VALUES ($1, $2, $3) RETURNING *',
+      [postId, userId, content]
+    );
 
-    if (commentError) {
-      console.error('Error creating comment:', commentError);
-      return res.status(400).json({ error: commentError.message });
-    }
+    const userResult = await db.query(
+      'SELECT id, display_name, email FROM users WHERE id = $1',
+      [userId]
+    );
 
-    // Get user info
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id, display_name, email')
-      .eq('id', userId)
-      .single();
-
-    if (userError) {
-      console.error('Error fetching user data:', userError);
-    }
-
+    const comment = commentResult.rows[0];
     const commentWithUser = {
       ...comment,
-      users: userData || null
+      user_id: userResult.rows[0]?.id,
+      display_name: userResult.rows[0]?.display_name,
+      email: userResult.rows[0]?.email
     };
 
     res.status(201).json(commentWithUser);

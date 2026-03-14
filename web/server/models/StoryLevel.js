@@ -1,12 +1,18 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../utils/database.js';
 
-const storyLevelSchema = new mongoose.Schema({
-  levelNumber: { type: Number, required: true },
-  topic: { type: mongoose.Schema.Types.ObjectId, ref: 'Topic', required: true },
-  starsRequiredToUnlock: { type: Number, default: 0 },
-  imageUrl: { type: String }
-}, { timestamps: true });
+export const StoryLevel = sequelize.define('StoryLevel', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  chapter: DataTypes.INTEGER,
+  title: DataTypes.STRING,
+  description: DataTypes.TEXT
+}, {
+  timestamps: true,
+  tableName: 'story_levels'
+});
 
-storyLevelSchema.index({ levelNumber: 1, topic: 1 }, { unique: true });
-
-export const StoryLevel = mongoose.model('StoryLevel', storyLevelSchema);
+export default StoryLevel;

@@ -1,12 +1,29 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../utils/database.js';
 
-const LeaderboardSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, 
-  story: { type: mongoose.Schema.Types.ObjectId, ref: 'Story', required: true },
-  topic: { type: mongoose.Schema.Types.ObjectId, ref: 'Topic', required: true },
-  level: { type: mongoose.Schema.Types.ObjectId, ref: 'StoryLevel', required: true },
-  score: { type: Number, required: true },
-  timestamp: { type: Date, default: Date.now }
+export const Leaderboard = sequelize.define('Leaderboard', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  userId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  score: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  rank: DataTypes.INTEGER,
+  badges: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: []
+  }
+}, {
+  timestamps: true,
+  tableName: 'leaderboards'
 });
 
-export const Leaderboard = mongoose.model('Leaderboard', LeaderboardSchema);
+export default Leaderboard;

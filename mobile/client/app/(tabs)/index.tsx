@@ -71,7 +71,7 @@ export default function ProfileScreen() {
       console.log('Fetching user data for:', session.user.id);
       const response = await fetch(`${API_URL}/users/${session.user.id}`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.token}`
         }
       });
       
@@ -98,7 +98,7 @@ export default function ProfileScreen() {
       const response = await fetch(`${API_URL}/users/${session.user.id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -131,7 +131,7 @@ export default function ProfileScreen() {
       // We need to add a new endpoint to the server to fetch analysis results
       const response = await fetch(`${API_URL}/users/${session.user.id}/analysis`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.token}`
         }
       });
       
@@ -152,7 +152,7 @@ export default function ProfileScreen() {
     try {
       setVerificationLoading(true);
       
-      if (!session?.access_token) {
+      if (!session?.token) {
         console.log('No access token available');
         return;
       }
@@ -160,7 +160,7 @@ export default function ProfileScreen() {
       console.log('Fetching verification status...');
       const response = await fetch(`${API_URL}/users/verification-status`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
         },
       });
 
@@ -187,7 +187,7 @@ export default function ProfileScreen() {
 
       const response = await fetch(`${API_URL}/users/${session.user.id}/verify-eligibility`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.token}`
         }
       });
       
@@ -234,7 +234,7 @@ export default function ProfileScreen() {
       const response = await fetch(`${API_URL}/users/${session.user.id}/verify`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
           'Content-Type': 'application/json'
         }
       });

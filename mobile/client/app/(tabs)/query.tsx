@@ -36,17 +36,17 @@
 //   const [analyzing, setAnalyzing] = useState(false);
 
 //   useEffect(() => {
-//     if (session?.access_token) {
+//     if (session?.token) {
 //       fetchQueries();
 //     }
-//   }, [session?.access_token]);
+//   }, [session?.token]);
 
 //   const fetchQueries = async () => {
 //     try {
 //       setLoading(true);
 //       const response = await fetch(`${API_URL}/queries`, {
 //         headers: {
-//           'Authorization': `Bearer ${session?.access_token}`,
+//           'Authorization': `Bearer ${session?.token}`,
 //           'Content-Type': 'application/json',
 //         },
 //       });
@@ -75,7 +75,7 @@
 //   };
 
 //   const handleSend = async () => {
-//     if (!newQuery.trim() || !session?.access_token || sending) return;
+//     if (!newQuery.trim() || !session?.token || sending) return;
 
 //     try {
 //       setSending(true);
@@ -83,7 +83,7 @@
 //         method: 'POST',
 //         headers: {
 //           'Content-Type': 'application/json',
-//           'Authorization': `Bearer ${session.access_token}`,
+//           'Authorization': `Bearer ${session?.token}`,
 //         },
 //         body: JSON.stringify({
 //           question: newQuery.trim(),
@@ -116,7 +116,7 @@
 //   };
 
 //   const handleAnalyzeQueries = async () => {
-//     if (!session?.access_token) {
+//     if (!session?.token) {
 //       Alert.alert('Error', 'Please sign in to analyze queries');
 //       return;
 //     }
@@ -131,7 +131,7 @@
 //       const response = await fetch(`${API_URL}/analyze-queries`, {
 //         method: 'POST',
 //         headers: {
-//           'Authorization': `Bearer ${session.access_token}`,
+//           'Authorization': `Bearer ${session?.token}`,
 //           'Content-Type': 'application/json',
 //         },
 //         body: JSON.stringify({ queries }),
@@ -410,17 +410,17 @@ export default function QueryScreen() {
   const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
-    if (session?.access_token) {
+    if (session?.token) {
       fetchQueries();
     }
-  }, [session?.access_token]);
+  }, [session?.token]);
 
   const fetchQueries = async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/queries`, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -449,7 +449,7 @@ export default function QueryScreen() {
   };
 
   const handleSend = async () => {
-    if (!newQuery.trim() || !session?.access_token || sending) return;
+    if (!newQuery.trim() || !session?.token || sending) return;
 
     try {
       setSending(true);
@@ -457,7 +457,7 @@ export default function QueryScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
         },
         body: JSON.stringify({
           question: newQuery.trim(),
@@ -499,7 +499,7 @@ export default function QueryScreen() {
   };
 
   const handleAnalyzeQueries = async () => {
-    if (!session?.access_token) {
+    if (!session?.token) {
       Alert.alert('Error', 'Please sign in to analyze queries');
       return;
     }
@@ -517,7 +517,7 @@ export default function QueryScreen() {
       const response = await fetch(`${API_URL}/analyze-queries`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
           'Content-Type': 'application/json',
         },
       });

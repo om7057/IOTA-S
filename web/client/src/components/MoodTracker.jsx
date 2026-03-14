@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from '../contexts/AuthContext';
 import { Frown, Smile, Heart, ZapOff, HelpCircle, Laugh, Wind, Moon, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 import FacialEmotionDetector from './FacialEmotionDetector';
 
 const MoodTracker = () => {
-  const { user } = useUser();
+  const { user, token } = useAuth();
   const [moods, setMoods] = useState([]);
   const [selectedMood, setSelectedMood] = useState(null);
   const [intensity, setIntensity] = useState(3);

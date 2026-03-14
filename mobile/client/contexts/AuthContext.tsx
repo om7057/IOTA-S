@@ -2,15 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-
-// API URL for the backend server
-// Android emulator: 10.0.2.2 (host machine)
-// iOS simulator: localhost or 127.0.0.1
-// Physical device: Use your machine's IP address
-const API_URL = 'http://10.0.2.2:3000/api';
-
-// OAuth discovery  
-const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
+import { API_URL } from '../constants';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -82,6 +74,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setUser(data);
+        // Also update session with the new user data
+        if (session) {
+          const updatedSession = { ...session, user: data };
+          setSession(updatedSession);
+          await AsyncStorage.setItem('authSession', JSON.stringify(updatedSession));
+        }
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -98,13 +96,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   try {
     console.log('Attempting signup with:', { email, displayName, age, gender });
 
+    // Add timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     const response = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ email, password, displayName, age, gender }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     if (!response.ok) {
       let errorMessage = 'Failed to sign up';
@@ -139,13 +144,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('Attempting signin with:', { email });
+
+      // Add timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch(`${API_URL}/auth/signin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -157,8 +171,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem('authSession', JSON.stringify(sessionData));
       setSession(sessionData);
       setUser(data.user);
+      console.log('✓ Sign in successful');
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error('✗ Sign in error:', error);
       throw error;
     }
   };

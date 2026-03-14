@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from '../contexts/AuthContext';
 import { BookOpen, Trash2, ArrowLeft, Edit3, Save, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const JournalPage = () => {
-  const { user } = useUser();
+  const { user, token } = useAuth();
   const [journals, setJournals] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedJournal, setSelectedJournal] = useState(null);
@@ -31,7 +31,9 @@ const JournalPage = () => {
 
   const fetchJournals = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/journals/user/${user.id}`);
+      const response = await fetch(`http://localhost:5000/api/journals/user/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (response.ok) {
         const data = await response.json();
         setJournals(data);
@@ -74,9 +76,12 @@ const JournalPage = () => {
       
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
-          clerkId: user.id,
+          userId: user.id,
           title: formData.title || 'Untitled',
           content: formData.content,
           mood: formData.mood || null,
@@ -103,7 +108,8 @@ const JournalPage = () => {
     if (window.confirm('Are you sure you want to delete this entry?')) {
       try {
         const response = await fetch(`http://localhost:5000/api/journals/${journalId}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (response.ok) {

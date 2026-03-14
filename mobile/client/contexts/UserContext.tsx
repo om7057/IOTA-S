@@ -26,7 +26,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'http://10.0.2.2:3000/api';
+  const API_URL = 'http://10.236.168.104:3000/api';
 
   const fetchUserProfile = async () => {
     if (!session?.user?.id) return;

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/supabase');
+const db = require('../config/database');
 const { verifyToken } = require('../middleware/auth');
 
-router.post('/journal-inputs', verifyToken, async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
     const { title, content } = req.body;
     const userId = req.user.id;
@@ -12,142 +12,107 @@ router.post('/journal-inputs', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Title and content are required' });
     }
 
-    const { data, error } = await supabase
-      .from('journal_inputs')
-      .insert([{
-        user_id: userId,
-        title,
-        content
-      }])
-      .select()
-      .single();
+    const result = await db.query(
+      'INSERT INTO journal_entries (user_id, title, content) VALUES ($1, $2, $3) RETURNING *',
+      [userId, title, content]
+    );
 
-    if (error) {
-      console.error('Error creating journal input:', error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    res.status(201).json(data);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating journal input:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/journal-inputs', verifyToken, async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { data, error } = await supabase
-      .from('journal_inputs')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    const result = await db.query(
+      'SELECT * FROM journal_entries WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
 
-    if (error) {
-      console.error('Error fetching journal inputs:', error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    res.json(data);
+    res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching journal inputs:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching journal entries:', error);
+    // If table doesn't exist, return empty array
+    if (error.code === '42P01') {
+      res.json([]);
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
-router.get('/journal-inputs/:entryId', verifyToken, async (req, res) => {
+router.get('/:entryId', verifyToken, async (req, res) => {
   try {
     const { entryId } = req.params;
     const userId = req.user.id;
 
-    const { data, error } = await supabase
-      .from('journal_inputs')
-      .select('*')
-      .eq('entry_id', entryId)
-      .eq('user_id', userId)
-      .single();
+    const result = await db.query(
+      'SELECT * FROM journal_entries WHERE id = $1 AND user_id = $2',
+      [entryId, userId]
+    );
 
-    if (error) {
-      console.error('Error fetching journal input:', error);
-      return res.status(400).json({ error: error.message });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Journal entry not found' });
     }
 
-    res.json(data);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error fetching journal input:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-router.put('/journal-inputs/:entryId', verifyToken, async (req, res) => {
+router.put('/:entryId', verifyToken, async (req, res) => {
   try {
     const { entryId } = req.params;
     const { title, content } = req.body;
     const userId = req.user.id;
 
-    const { data: existingEntry, error: checkError } = await supabase
-      .from('journal_inputs')
-      .select('*')
-      .eq('entry_id', entryId)
-      .eq('user_id', userId)
-      .single();
+    const checkResult = await db.query(
+      'SELECT * FROM journal_entries WHERE id = $1 AND user_id = $2',
+      [entryId, userId]
+    );
 
-    if (checkError || !existingEntry) {
-      return res.status(404).json({ error: 'Journal input not found or unauthorized' });
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Journal entry not found or unauthorized' });
     }
 
-    const { data, error } = await supabase
-      .from('journal_inputs')
-      .update({
-        title,
-        content,
-        updated_at: new Date().toISOString()
-      })
-      .eq('entry_id', entryId)
-      .select()
-      .single();
+    const result = await db.query(
+      'UPDATE journal_entries SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
+      [title, content, entryId]
+    );
 
-    if (error) {
-      console.error('Error updating journal input:', error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    res.json(data);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating journal input:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-router.delete('/journal-inputs/:entryId', verifyToken, async (req, res) => {
+router.delete('/:entryId', verifyToken, async (req, res) => {
   try {
     const { entryId } = req.params;
     const userId = req.user.id;
 
-    const { data: existingEntry, error: checkError } = await supabase
-      .from('journal_inputs')
-      .select('*')
-      .eq('entry_id', entryId)
-      .eq('user_id', userId)
-      .single();
+    const checkResult = await db.query(
+      'SELECT * FROM journal_entries WHERE id = $1 AND user_id = $2',
+      [entryId, userId]
+    );
 
-    if (checkError || !existingEntry) {
-      return res.status(404).json({ error: 'Journal input not found or unauthorized' });
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Journal entry not found or unauthorized' });
     }
 
-    const { error } = await supabase
-      .from('journal_inputs')
-      .delete()
-      .eq('entry_id', entryId)
-      .eq('user_id', userId);
+    await db.query(
+      'DELETE FROM journal_entries WHERE id = $1 AND user_id = $2',
+      [entryId, userId]
+    );
 
-    if (error) {
-      console.error('Error deleting journal input:', error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    res.json({ success: true, message: 'Journal input deleted successfully' });
+    res.json({ success: true, message: 'Journal entry deleted successfully' });
   } catch (error) {
     console.error('Error deleting journal input:', error);
     res.status(500).json({ error: error.message });

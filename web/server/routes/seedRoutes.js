@@ -1,48 +1,88 @@
 import express from 'express';
-import { Story } from '../models/Story.js';
-import { Topic } from '../models/Topic.js';
-import { StoryLevel } from '../models/StoryLevel.js';
-import { Quiz } from '../models/Quiz.js';
-import { childSafetyQuiz } from '../seeds/quizData.js';
+import { Story, Topic, StoryLevel, Quiz } from '../models/index.js';
+import { v4 as uuid } from 'uuid';
 
 const router = express.Router();
+
+// Sample quiz data
+const childSafetyQuiz = [
+  {
+    question: 'What is the first thing you should do if someone touches you in a way that makes you uncomfortable?',
+    options: [
+      'Say NO and move away',
+      'Stay quiet and freeze',
+      'Try to handle it yourself',
+      'Wait to tell someone later'
+    ],
+    correctAnswer: 0,
+    points: 10
+  },
+  {
+    question: 'Who should you tell if someone touches you in a bad way?',
+    options: [
+      'A trusted adult like parent, teacher, or counselor',
+      'Nobody - you should feel ashamed',
+      'Try to forget about it',
+      'Only tell your friends'
+    ],
+    correctAnswer: 0,
+    points: 10
+  },
+  {
+    question: 'Good touch makes you feel:',
+    options: [
+      'Safe and comfortable',
+      'Scared and confused',
+      'Angry and upset',
+      'Ashamed'
+    ],
+    correctAnswer: 0,
+    points: 10
+  }
+];
 
 // Seed the child safety story
 router.post('/seed-child-safety', async (req, res) => {
   try {
-    // First, ensure topic and level exist
-    let topic = await Topic.findOne({ name: 'Child Safety' });
+    // First, ensure topic exists
+    let topic = await Topic.findOne({ where: { name: 'Child Safety' } });
     if (!topic) {
       topic = await Topic.create({
+        id: uuid(),
         name: 'Child Safety',
         description: 'Learn about personal safety and protecting yourself from harm'
       });
     }
 
+    // Create a story level
     let level = await StoryLevel.findOne({ 
-      topic: topic._id,
-      levelNumber: 1 
+      where: { 
+        title: 'Child Safety Level 1'
+      }
     });
     if (!level) {
       level = await StoryLevel.create({
-        levelNumber: 1,
-        topic: topic._id,
-        starsRequiredToUnlock: 0,
-        imageUrl: '/level-1.jpg'
+        id: uuid(),
+        chapter: 1,
+        title: 'Child Safety Level 1',
+        description: 'Introduction to personal safety'
       });
     }
 
     // Check if story already exists
-    const existingStory = await Story.findOne({ title: 'Child Safety - Good Touch & Bad Touch' });
+    const existingStory = await Story.findOne({ 
+      where: { title: 'Child Safety - Good Touch & Bad Touch' }
+    });
     if (existingStory) {
       return res.status(400).json({ message: 'Story already exists' });
     }
 
     const storyData = {
+      id: uuid(),
       title: 'Child Safety - Good Touch & Bad Touch',
       description: 'Learn about personal safety through Arav\'s journey. Understand good touch, bad touch, and why telling a trusted adult is important.',
-      topic: topic._id,
-      level: level._id,
+      topicId: topic.id,
+      levelId: level.id,
       scenes: [
         {
           title: 'Arav happily goes to school with his parents.',
@@ -73,82 +113,11 @@ router.post('/seed-child-safety', async (req, res) => {
           options: [{ text: 'Next', to: 15 }],
         },
         {
-          title: 'Later that day, Arav meets an adult known to the family.',
-          image: '/a5.jpg',
-          options: [{ text: 'Next', to: 6 }],
-        },
-        {
-          title: 'The man asks Arav to come closer. Arav starts feeling uncomfortable.',
-          image: '/a6.jpg',
-          options: [{ text: 'Next', to: 7 }],
-        },
-        {
-          title: 'The man touches Arav in a way that feels wrong. Arav remembers this is bad touch.',
-          image: '/a9.jpg',
-          options: [
-            { text: 'Shout and run away', to: 8 },
-            { text: 'Stay silent', to: 9 },
-          ],
-        },
-        {
-          title: 'Great job! Arav shouts and runs away to a safe place.',
-          image: '/a10.jpg',
-          options: [{ text: 'Next', to: 15 }],
-        },
-        {
-          title: 'Arav feels scared and confused. He does not know what to do.',
-          image: '/a12.jpg',
-          options: [{ text: 'Next', to: 10 }],
-        },
-        {
-          title: 'The man tells Arav to keep it a secret and offers him chocolates.',
-          image: '/a11.jpg',
-          options: [{ text: 'Next', to: 11 }],
-        },
-        {
-          title: 'Arav is crying and feels very upset.',
-          image: '/15.jpg',
-          options: [{ text: 'Next', to: 12 }],
-        },
-        {
-          title: 'Arav\'s parents arrive home and notice he is sad.',
-          image: '/14.jpg',
-          options: [{ text: 'Next', to: 13 }],
-        },
-        {
-          title: 'Should Arav tell his parents what happened?',
-          image: '/a16.jpg',
-          options: [
-            { text: 'Tell parents', to: 14 },
-            { text: 'Keep it secret', to: 16 },
-          ],
-        },
-        {
-          title: 'Arav tells his parents everything. They listen and support him.',
-          image: '/17.jpg',
-          options: [{ text: 'Next', to: 15 }],
-        },
-        {
-          title: 'The bad person is reported and Arav is kept safe.',
-          image: '/a20.jpg',
-          options: [{ text: 'Next', to: 18 }],
-        },
-        {
-          title: 'Keeping secrets makes Arav feel lonely and scared.',
-          image: '/sad.jpg',
-          options: [{ text: 'Next', to: 18 }],
-        },
-        {
-          title: 'Arav feels relieved after sharing the truth.',
-          image: '/17.jpg',
-          options: [{ text: 'Next', to: 18 }],
-        },
-        {
-          title: 'Lesson Learned: If someone touches you in a way that feels wrong, say NO, move away, and tell a trusted adult. You are not alone.',
-          image: '/award2.gif',
+          title: 'Lesson Learned: Always trust your feeling. If something does not feel right, say NO and go to a trusted adult.',
+          image: '/award.gif',
           options: [{ text: 'End Story', to: 0 }],
-        },
-      ],
+        }
+      ]
     };
 
     const newStory = await Story.create(storyData);
@@ -158,6 +127,7 @@ router.post('/seed-child-safety', async (req, res) => {
       story: newStory
     });
   } catch (err) {
+    console.error('Error seeding child safety story:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -166,24 +136,38 @@ router.post('/seed-child-safety', async (req, res) => {
 router.post('/seed-child-safety-quizzes', async (req, res) => {
   try {
     // Find the child safety story
-    const story = await Story.findOne({ title: 'Child Safety - Good Touch & Bad Touch' });
+    const story = await Story.findOne({ 
+      where: { title: 'Child Safety - Good Touch & Bad Touch' }
+    });
     if (!story) {
-      return res.status(404).json({ error: 'Child Safety story not found. Seed story first with /api/seed/seed-child-safety' });
+      return res.status(404).json({ 
+        error: 'Child Safety story not found. Seed story first with /api/seed/seed-child-safety' 
+      });
     }
 
     // Check if quizzes already exist
-    const existingQuizzes = await Quiz.find({ story: story._id });
+    const existingQuizzes = await Quiz.findAll({ 
+      where: { storyId: story.id }
+    });
     if (existingQuizzes.length > 0) {
-      return res.status(400).json({ message: `${existingQuizzes.length} quizzes already exist for this story` });
+      return res.status(400).json({ 
+        message: `${existingQuizzes.length} quizzes already exist for this story` 
+      });
     }
 
     // Create quiz questions with story reference
-    const quizzesWithStory = childSafetyQuiz.map(quiz => ({
-      ...quiz,
-      story: story._id
-    }));
-
-    const createdQuizzes = await Quiz.insertMany(quizzesWithStory);
+    const createdQuizzes = [];
+    for (const quizData of childSafetyQuiz) {
+      const quiz = await Quiz.create({
+        id: uuid(),
+        storyId: story.id,
+        question: quizData.question,
+        options: quizData.options,
+        correctAnswer: quizData.correctAnswer,
+        points: quizData.points
+      });
+      createdQuizzes.push(quiz);
+    }
 
     res.status(201).json({
       message: 'Child Safety quizzes seeded successfully',
@@ -191,9 +175,9 @@ router.post('/seed-child-safety-quizzes', async (req, res) => {
       quizzes: createdQuizzes
     });
   } catch (err) {
+    console.error('Error seeding quizzes:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
 export default router;
-

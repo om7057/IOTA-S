@@ -1,22 +1,46 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../utils/database.js';
 
-const userSchema = new mongoose.Schema({
-  clerkId: { type: String, required: true, unique: true },
-  username: String,
-  email: String,
-  firstName: String,
-  lastName: String,
-  imageUrl: String,
-  createdAt: { type: Date, default: Date.now },
-
-  // Age and user type for children vs teenager experience
-  age: { type: Number, min: 8, max: 19 },
-  userType: { type: String, enum: ['child', 'teenager'], default: 'child' }, // child (8-12) or teenager (13-19)
-
-  unlockedLevels: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StoryLevel' }],
-  completedLevels: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StoryLevel' }],
-  completedStories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Story' }],
-  currentStars: { type: Number, default: 0 }
+export const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  userId: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false
+  },
+  oauthProvider: {
+    type: DataTypes.ENUM('google', 'github', 'local'),
+    allowNull: false
+  },
+  username: DataTypes.STRING,
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: { isEmail: true }
+  },
+  firstName: DataTypes.STRING,
+  lastName: DataTypes.STRING,
+  imageUrl: DataTypes.STRING,
+  passwordHash: DataTypes.STRING,
+  age: {
+    type: DataTypes.INTEGER,
+    validate: { min: 5, max: 19 }
+  },
+  userType: {
+    type: DataTypes.ENUM('child', 'teenager'),
+    defaultValue: 'child'
+  },
+  currentStars: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  }
+}, {
+  timestamps: true,
+  tableName: 'users'
 });
 
-export const User = mongoose.model('User', userSchema); 
+export default User;

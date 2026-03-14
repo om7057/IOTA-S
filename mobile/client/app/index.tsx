@@ -37,7 +37,7 @@ export default function Profile() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.token}`
         },
         body: JSON.stringify({
           displayName

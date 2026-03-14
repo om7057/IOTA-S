@@ -1,159 +1,141 @@
 import express from 'express';
-import { Journal } from '../models/Journal.js';
+import { Journal } from '../models/index.js';
+import { verifyToken } from '../middleware/auth.js';
+import { Op } from 'sequelize';
 
 const router = express.Router();
 
 // Get all journal entries for a user
-router.get('/user/:clerkId', async (req, res) => {
+router.get('/user/:userId', verifyToken, async (req, res) => {
   try {
-    const { clerkId } = req.params;
-    const journals = await Journal.find({ clerkId }).sort({ createdAt: -1 });
-    res.json(journals);
+    const { userId } = req.params;
+    const journalEntries = await Journal.findAll({
+      where: { userId },
+      // Hide anonymous entries from non-authors
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(journalEntries);
   } catch (error) {
-    console.error('Error fetching journals:', error);
-    res.status(500).json({ message: 'Error fetching journals' });
-  }
-});
-
-// Get journal entries for specific date range
-router.get('/user/:clerkId/range', async (req, res) => {
-  try {
-    const { clerkId } = req.params;
-    const { startDate, endDate } = req.query;
-    
-    const query = { clerkId };
-    if (startDate && endDate) {
-      query.entryDate = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-    
-    const journals = await Journal.find(query).sort({ entryDate: -1 });
-    res.json(journals);
-  } catch (error) {
-    console.error('Error fetching journals:', error);
-    res.status(500).json({ message: 'Error fetching journals' });
+    console.error('Error fetching journal entries:', error);
+    res.status(500).json({ message: 'Error fetching journal entries' });
   }
 });
 
 // Get a single journal entry
-router.get('/:journalId', async (req, res) => {
+router.get('/:journalId', verifyToken, async (req, res) => {
   try {
     const { journalId } = req.params;
-    const journal = await Journal.findById(journalId);
+    const journal = await Journal.findByPk(journalId);
     
     if (!journal) {
-      return res.status(404).json({ message: 'Journal not found' });
+      return res.status(404).json({ message: 'Journal entry not found' });
     }
     
     res.json(journal);
   } catch (error) {
-    console.error('Error fetching journal:', error);
-    res.status(500).json({ message: 'Error fetching journal' });
+    console.error('Error fetching journal entry:', error);
+    res.status(500).json({ message: 'Error fetching journal entry' });
   }
 });
 
 // Create a new journal entry
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
-    const { userId, clerkId, title, content, mood, moodIntensity, tags, isAnonymous } = req.body;
+    const { title, content, mood, moodIntensity, isAnonymous, tags } = req.body;
+    const userId = req.user.id;
     
-    if (!clerkId || !content) {
+    if (!title || !content) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
     
-    const journal = new Journal({
+    const journal = await Journal.create({
       userId,
-      clerkId,
-      title: title || 'Untitled',
+      title,
       content,
       mood: mood || null,
       moodIntensity: moodIntensity || null,
-      tags: tags || [],
       isAnonymous: isAnonymous || false,
-      entryDate: new Date()
+      tags: tags || []
     });
     
-    await journal.save();
     res.status(201).json(journal);
   } catch (error) {
-    console.error('Error creating journal:', error);
-    res.status(500).json({ message: 'Error creating journal' });
+    console.error('Error creating journal entry:', error);
+    res.status(500).json({ message: 'Error creating journal entry' });
   }
 });
 
 // Update a journal entry
-router.put('/:journalId', async (req, res) => {
+router.put('/:journalId', verifyToken, async (req, res) => {
   try {
     const { journalId } = req.params;
-    const { title, content, mood, moodIntensity, tags, isAnonymous } = req.body;
+    const { title, content, mood, moodIntensity, isAnonymous, tags } = req.body;
     
-    const journal = await Journal.findByIdAndUpdate(
-      journalId,
-      { 
-        title, 
-        content, 
-        mood, 
-        moodIntensity, 
-        tags, 
-        isAnonymous,
-        updatedAt: Date.now() 
-      },
-      { new: true }
-    );
-    
+    const journal = await Journal.findByPk(journalId);
     if (!journal) {
-      return res.status(404).json({ message: 'Journal not found' });
+      return res.status(404).json({ message: 'Journal entry not found' });
     }
+    
+    // Verify ownership
+    if (journal.userId !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to update this entry' });
+    }
+    
+    await journal.update({
+      title: title || journal.title,
+      content: content || journal.content,
+      mood: mood !== undefined ? mood : journal.mood,
+      moodIntensity: moodIntensity !== undefined ? moodIntensity : journal.moodIntensity,
+      isAnonymous: isAnonymous !== undefined ? isAnonymous : journal.isAnonymous,
+      tags: tags || journal.tags
+    });
     
     res.json(journal);
   } catch (error) {
-    console.error('Error updating journal:', error);
-    res.status(500).json({ message: 'Error updating journal' });
+    console.error('Error updating journal entry:', error);
+    res.status(500).json({ message: 'Error updating journal entry' });
   }
 });
 
 // Delete a journal entry
-router.delete('/:journalId', async (req, res) => {
+router.delete('/:journalId', verifyToken, async (req, res) => {
   try {
     const { journalId } = req.params;
-    const journal = await Journal.findByIdAndDelete(journalId);
+    const journal = await Journal.findByPk(journalId);
     
     if (!journal) {
-      return res.status(404).json({ message: 'Journal not found' });
+      return res.status(404).json({ message: 'Journal entry not found' });
     }
     
-    res.json({ message: 'Journal deleted' });
+    // Verify ownership
+    if (journal.userId !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to delete this entry' });
+    }
+    
+    await journal.destroy();
+    res.json({ message: 'Journal entry deleted' });
   } catch (error) {
-    console.error('Error deleting journal:', error);
-    res.status(500).json({ message: 'Error deleting journal' });
+    console.error('Error deleting journal entry:', error);
+    res.status(500).json({ message: 'Error deleting journal entry' });
   }
 });
 
-// Search journals by tags or content
-router.get('/search/:clerkId', async (req, res) => {
+// Search journal entries by tag
+router.get('/user/:userId/tag/:tag', verifyToken, async (req, res) => {
   try {
-    const { clerkId } = req.params;
-    const { query } = req.query;
-    
-    if (!query) {
-      return res.status(400).json({ message: 'Search query required' });
-    }
-    
-    const journals = await Journal.find({
-      clerkId,
-      $or: [
-        { title: { $regex: query, $options: 'i' } },
-        { content: { $regex: query, $options: 'i' } },
-        { tags: { $in: [query] } }
-      ]
-    }).sort({ createdAt: -1 });
+    const { userId, tag } = req.params;
+    const journals = await Journal.findAll({
+      where: {
+        userId,
+        tags: { [Op.contains]: [tag] }
+      },
+      order: [['createdAt', 'DESC']]
+    });
     
     res.json(journals);
   } catch (error) {
-    console.error('Error searching journals:', error);
-    res.status(500).json({ message: 'Error searching journals' });
+    console.error('Error fetching journal entries by tag:', error);
+    res.status(500).json({ message: 'Error fetching journal entries' });
   }
 });
 

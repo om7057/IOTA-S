@@ -1,10 +1,10 @@
 import React from "react";
-import { useUser } from "@clerk/clerk-react";
+import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Lightbulb, BarChart3, Newspaper, CheckCircle, Flame, Shield, Smile, BookMarked, ArrowRight } from "lucide-react";
 
 function Home() {
-  const { user, isSignedIn } = useUser();
+  const { user, isLoading, isSignedIn } = useAuth();
   const navigate = useNavigate();
 
   const quickActions = [

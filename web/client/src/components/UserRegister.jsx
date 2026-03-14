@@ -1,22 +1,13 @@
-import { useUser } from "@clerk/clerk-react";
+import { useAuth } from "../contexts/AuthContext";
 import { useEffect } from "react";
-import { registerUser } from "../services/auth";
 import { Loader2 } from "lucide-react";
 
 const UserRegister = () => {
-  const { user } = useUser();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      registerUser({
-        clerkId: user.id,
-        username: user.username,
-        email: user.primaryEmailAddress?.emailAddress,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        imageUrl: user.profileImageUrl,
-      }).then((res) => console.log("User registered:", res));
-    }
+    // User is already registered during authentication
+    // This component just shows the loading state
   }, [user]);
 
   return (

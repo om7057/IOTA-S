@@ -118,31 +118,31 @@ export default function GroupScreen() {
   const scaleAnim = useRef(new Animated.Value(0.9)).current
 
   useEffect(() => {
-    if (session?.access_token) {
+    if (session?.token) {
       fetchMyGroups()
       fetchUnreadCount()
     }
-  }, [session?.access_token])
+  }, [session?.token])
 
   // Periodically check for unread messages
   useEffect(() => {
-    if (!session?.access_token) return
+    if (!session?.token) return
 
     const interval = setInterval(() => {
       fetchUnreadCount()
     }, 30000) // Check every 30 seconds
 
     return () => clearInterval(interval)
-  }, [session?.access_token])
+  }, [session?.token])
 
   // Fetch number of unread direct messages
   const fetchUnreadCount = async () => {
-    if (!session?.access_token) return
+    if (!session?.token) return
 
     try {
       const response = await fetch(`${API_URL}/direct-messages/unread/count`, {
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session?.token}`,
           "Content-Type": "application/json",
         },
       })
@@ -164,7 +164,7 @@ export default function GroupScreen() {
       setLoading(true)
       const response = await fetch(`${API_URL}/groups`, {
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session?.token}`,
           "Content-Type": "application/json",
         },
       })
@@ -191,7 +191,7 @@ export default function GroupScreen() {
       setRefreshing(true)
       const response = await fetch(`${API_URL}/groups/${selectedGroup.group_id}/messages`, {
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session?.token}`,
           "Content-Type": "application/json",
         },
       })
@@ -212,7 +212,7 @@ export default function GroupScreen() {
 
   // Join a group
   const handleJoinGroup = async () => {
-    if (!groupName.trim() || !session?.access_token || joining) return
+    if (!groupName.trim() || !session?.token || joining) return
 
     try {
       setJoining(true)
@@ -220,7 +220,7 @@ export default function GroupScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session?.token}`,
         },
         body: JSON.stringify({
           groupName: groupName.trim(),
@@ -249,7 +249,7 @@ export default function GroupScreen() {
 
   // Send a message
   const handleSendMessage = async () => {
-    if (!messageText.trim() || !selectedGroup || !session?.access_token || sendingMessage) return
+    if (!messageText.trim() || !selectedGroup || !session?.token || sendingMessage) return
 
     try {
       setSendingMessage(true)
@@ -257,7 +257,7 @@ export default function GroupScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session?.token}`,
         },
         body: JSON.stringify({
           content: messageText.trim(),
@@ -290,12 +290,12 @@ export default function GroupScreen() {
 
   // Direct messaging functions
   const openDirectMessage = async (userId: string) => {
-    if (!session?.access_token) return
+    if (!session?.token) return
 
     try {
       const response = await fetch(`${API_URL}/direct-messages/${userId}`, {
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session?.token}`,
           "Content-Type": "application/json",
         },
       })
@@ -354,7 +354,7 @@ export default function GroupScreen() {
   }
 
   const sendDirectMessage = async () => {
-    if (!dmText.trim() || !dmPartner || !session?.access_token || sendingDm) return
+    if (!dmText.trim() || !dmPartner || !session?.token || sendingDm) return
 
     try {
       setSendingDm(true)
@@ -362,7 +362,7 @@ export default function GroupScreen() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session?.token}`,
         },
         body: JSON.stringify({
           content: dmText.trim(),
@@ -394,7 +394,7 @@ export default function GroupScreen() {
 
       const response = await fetch(`${API_URL}/direct-messages/inbox`, {
         headers: {
-          Authorization: `Bearer ${session?.access_token}`,
+          Authorization: `Bearer ${session?.token}`,
           "Content-Type": "application/json",
         },
       })
@@ -427,7 +427,7 @@ export default function GroupScreen() {
 
   // NEW FUNCTION: Analyze user queries and join recommended groups
   const analyzeQueries = async () => {
-    if (!session?.access_token || analyzingQueries) return
+    if (!session?.token || analyzingQueries) return
 
     try {
       setAnalyzingQueries(true)
@@ -436,7 +436,7 @@ export default function GroupScreen() {
       const response = await fetch(`${API_URL}/users/${session.user.id}/analyze-queries`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session?.token}`,
           "Content-Type": "application/json",
         },
       })

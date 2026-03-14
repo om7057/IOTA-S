@@ -1,52 +1,25 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../utils/database.js';
 
-const optionSchema = new mongoose.Schema({
-  text: {
-    type: String,
-    required: true
+export const NewsStory = sequelize.define('NewsStory', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
-  to: {
-    type: Number,
-    required: true
-  }
-});
-
-const sceneSchema = new mongoose.Schema({
   title: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
-  image: {
-    type: String,
-    required: true
-  },
-  options: [optionSchema]
+  description: DataTypes.TEXT,
+  newsUrl: DataTypes.STRING,
+  imageUrl: DataTypes.STRING,
+ source: DataTypes.STRING,
+  topic: DataTypes.STRING,
+  publishedAt: DataTypes.DATE
+}, {
+  timestamps: true,
+  tableName: 'news_stories'
 });
 
-const newsStorySchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true
-  },
-  description: {
-    type: String,
-    required: true
-  },
-  level: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'StoryLevel',
-    required: true
-  },
-  topic: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Topic',
-    required: true
-  },
-  scenes: [sceneSchema],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-export default mongoose.model('NewsStory', newsStorySchema);
+export default NewsStory;

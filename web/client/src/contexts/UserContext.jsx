@@ -1,10 +1,10 @@
 import { createContext, useState, useContext, useEffect } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from './AuthContext';
 
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
-  const { user, isLoaded } = useUser();
+  const { user, token } = useAuth();
   const [userProfile, setUserProfile] = useState(null);
   const [userType, setUserType] = useState(null); // 'child' or 'teen'
   const [age, setAge] = useState(null);
@@ -12,16 +12,18 @@ export function UserProvider({ children }) {
 
   // Fetch user profile from backend
   useEffect(() => {
-    if (isLoaded && user) {
+    if (user?.id) {
       fetchUserProfile();
     } else {
       setLoading(false);
     }
-  }, [isLoaded, user]);
+  }, [user, token]);
 
   const fetchUserProfile = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/users/clerk/${user.id}`);
+      const response = await fetch(`http://localhost:5000/api/users/${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (response.ok) {
         const profile = await response.json();
         setUserProfile(profile);
@@ -41,7 +43,10 @@ export function UserProvider({ children }) {
     try {
       const response = await fetch(`http://localhost:5000/api/users/${user.id}/age`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ age: userAge })
       });
 

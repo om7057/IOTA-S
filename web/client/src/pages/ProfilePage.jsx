@@ -1,40 +1,63 @@
 import React, { useEffect, useState } from "react";
-import { useUser, useClerk } from "@clerk/clerk-react";
+import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { BarChart3, LogOut, CheckCircle, ArrowLeft } from "lucide-react";
 
 const ProfilePage = () => {
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
 
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
+    logout();
     navigate("/login");
   };
 
   useEffect(() => {
     const fetchUserProgress = async () => {
-      if (!user) return;
+      if (!user?.id || !token) {
+        console.log("Missing user ID or token, skipping fetch");
+        setLoading(false);
+        return;
+      }
 
       try {
-        const response = await fetch(`http://localhost:5000/api/quiz-progress/user/${user.id}`);
-        if (!response.ok) throw new Error("Failed to fetch user progress");
-
-        const data = await response.json();
-        setUserData(data);
+        console.log("Fetching progress for user:", user.id);
+        const response = await fetch(`http://localhost:5000/api/quiz-progress/user/${user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log("Progress fetch response status:", response.status);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            console.log("No progress data found (404) - setting empty state");
+            setUserData(null);
+          } else {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to fetch user progress");
+          }
+        } else {
+          const data = await response.json();
+          console.log("Progress data received:", data);
+          setUserData(data);
+        }
       } catch (error) {
         console.error("Error fetching user progress:", error);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserProgress();
-  }, [user]);
+  }, [user, token]);
 
   return (
     <div className="max-w-lg mx-auto">
@@ -49,11 +72,9 @@ const ProfilePage = () => {
         <div className="flex justify-center mb-6">
           <div className="relative">
             <div className="w-28 h-28 rounded-full bg-sky-100 p-1">
-              <img
-                src={user?.imageUrl || "/api/placeholder/100/100"}
-                alt={user?.fullName || "Profile Picture"}
-                className="w-full h-full rounded-full object-cover border-4 border-white"
-              />
+              <div className="w-full h-full rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center border-4 border-white text-4xl text-white font-bold">
+                {user?.email?.charAt(0).toUpperCase() || "U"}
+              </div>
             </div>
             <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500 border-4 border-white flex items-center justify-center">
               <CheckCircle className="w-4 h-4 text-white" />
@@ -63,8 +84,8 @@ const ProfilePage = () => {
 
         {/* User Info */}
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">{user?.fullName || "Your Name"}</h2>
-          <p className="text-gray-500">{user?.primaryEmailAddress?.emailAddress || "email@example.com"}</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">{user?.email || "Your Email"}</h2>
+          <p className="text-gray-500">Learner</p>
         </div>
 
         {/* Stats Cards */}
@@ -78,24 +99,29 @@ const ProfilePage = () => {
                 </div>
               ))}
             </>
-          ) : userData ? (
+          ) : error ? (
+            <div className="col-span-3 text-center py-4">
+              <p className="text-red-500 text-sm">Error loading progress: {error}</p>
+            </div>
+          ) : Array.isArray(userData) && userData.length > 0 ? (
             <>
+              {/* Calculate stats from quiz progress data */}
               <div className="bg-amber-50 rounded-xl p-4 text-center border border-amber-100">
-                <p className="text-2xl font-bold text-amber-600 mb-1">{userData.currentStars || 0}</p>
-                <p className="text-xs text-gray-600 font-medium">Stars</p>
+                <p className="text-2xl font-bold text-amber-600 mb-1">{userData.reduce((sum, p) => sum + (p.points || 0), 0)}</p>
+                <p className="text-xs text-gray-600 font-medium">Points Earned</p>
               </div>
               <div className="bg-sky-50 rounded-xl p-4 text-center border border-sky-100">
-                <p className="text-2xl font-bold text-sky-600 mb-1">{userData.completedLevels?.length || 0}</p>
-                <p className="text-xs text-gray-600 font-medium">Levels</p>
+                <p className="text-2xl font-bold text-sky-600 mb-1">{userData.filter(p => p.isCorrect).length}</p>
+                <p className="text-xs text-gray-600 font-medium">Correct Answers</p>
               </div>
               <div className="bg-emerald-50 rounded-xl p-4 text-center border border-emerald-100">
-                <p className="text-2xl font-bold text-emerald-600 mb-1">{userData.completedStories?.length || 0}</p>
-                <p className="text-xs text-gray-600 font-medium">Stories</p>
+                <p className="text-2xl font-bold text-emerald-600 mb-1">{userData.length}</p>
+                <p className="text-xs text-gray-600 font-medium">Total Attempts</p>
               </div>
             </>
           ) : (
             <div className="col-span-3 text-center py-4">
-              <p className="text-gray-500 text-sm">No progress data found.</p>
+              <p className="text-gray-500 text-sm">No progress data found. Start taking quizzes!</p>
             </div>
           )}
         </div>

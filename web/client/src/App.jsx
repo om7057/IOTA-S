@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
-import { SignedIn, SignedOut, useClerk } from "@clerk/clerk-react";
-import { UserProvider, useUserProfile } from "./contexts/UserContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./pages/Login";
 import AgeSelection from "./pages/AgeSelection";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import ProfilePage from "./pages/ProfilePage";
 import JournalPage from "./pages/JournalPage";
+import StoriesPage from "./pages/StoriesPage";
+import ExpressionPage from "./pages/ExpressionPage";
+import GroupsPage from "./pages/GroupsPage";
+import QueriesPage from "./pages/QueriesPage";
+import ResourcesPage from "./pages/ResourcesPage";
 import MoodTracker from "./components/MoodTracker";
 import Levels from "./components/Levels";
 import Quiz from "./components/Quiz";
@@ -20,47 +24,31 @@ import QuizLandingPage from "./pages/QuizLandingPage";
 import { Toaster } from "react-hot-toast";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 
-// Age gate wrapper component
-const AgeGateWrapper = ({ children }) => {
-  const { age, loading } = useUserProfile();
-  const { isSignedIn, loaded } = useClerk();
-
-  // Still loading user profile
-  if (!loaded || loading) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "linear-gradient(to right, #f0f9ff, #dbeafe)" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ width: "64px", height: "64px", border: "4px solid #bae6fd", borderTop: "4px solid #0284c7", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto", marginBottom: "16px" }}></div>
-          <p style={{ fontSize: "20px", fontWeight: "600", color: "#374151" }}>Loading your profile...</p>
-          <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-        </div>
-      </div>
-    );
-  }
-
-  // Signed in but no age set
-  if (isSignedIn && !age) {
-    return <AgeSelection />;
-  }
-
-  return children;
-};
-
 const AppContent = () => {
-  const { loaded, isSignedIn } = useClerk();
+  const { isLoading, isSignedIn, age } = useAuth();
   const [emotionTimeLine, setEmotionTimeLine] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingApp, setIsLoadingApp] = useState(false);
 
+  // All hooks must be at the top - before any conditionals
   useEffect(() => {
-    console.log("Clerk loaded:", loaded);
     console.log("Is signed in:", isSignedIn);
-  }, [loaded, isSignedIn]);
+  }, [isSignedIn]);
+
+  // Move this before the early returns
+  useEffect(() => {
+    if (isSignedIn) {
+      // Only run emotion data fetch when signed in
+      const handleSetEmotionData = (emotionData) => {
+        setEmotionTimeLine(emotionData);
+      };
+    }
+  }, [isSignedIn]);
 
   const handleLoading = (status) => {
-    setIsLoading(status);
+    setIsLoadingApp(status);
   };
 
-  if (!loaded) {
+  if (isLoading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "linear-gradient(to right, #f0f9ff, #dbeafe)" }}>
         <div style={{ textAlign: "center" }}>
@@ -73,249 +61,49 @@ const AppContent = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 text-gray-800 font-sans antialiased">
-      {isLoading && <LoadingSpinner />}
-      
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#FFF',
-            color: '#333',
-            borderRadius: '8px',
-            fontSize: '14px',
-          },
-          success: {
-            iconTheme: {
-              primary: '#4CAF50',
-              secondary: '#FFF',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#E53E3E',
-              secondary: '#FFF',
-            },
-          },
-        }}
-      />
-      
-      <AgeGateWrapper>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/sign-in" element={<Login />} />
-          <Route path="/sign-up" element={<Login />} />
-          <Route path="/age-selection" element={<AgeSelection />} />
+  if (!isSignedIn) {
+    return <Login />;
+  }
 
-          <Route 
-            path="/" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <Home />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/mood" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <div className="max-w-2xl mx-auto">
-                      <MoodTracker />
-                    </div>
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/journal" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <JournalPage />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/profile" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <ProfilePage />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/stories/:levelId" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <Stories emotionTimeLine={emotionTimeLine} setEmotionTimeLine={setEmotionTimeLine} />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/levels/:topicId" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <Levels />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/quiz/:storyId" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <Quiz />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/leaderboard" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <Leaderboard />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/live" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <Live />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/story-play/:storyId" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <StoryPlayer emotionTimeline={emotionTimeLine} setEmotionTimeline={setEmotionTimeLine} />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/story-learning" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <StoryLearning />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route 
-            path="/quizzes" 
-            element={
-              <>
-                <SignedIn>
-                  <Layout setIsLoading={handleLoading}>
-                    <QuizLandingPage />
-                  </Layout>
-                </SignedIn>
-                <SignedOut>
-                  <Navigate to="/sign-in" replace />
-                </SignedOut>
-              </>
-            } 
-          />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AgeGateWrapper>
-    </div>
+  // Signed in but age not selected - show age selection page
+  if (!age) {
+    return <AgeSelection />;
+  }
+
+  return (
+    <Layout onLoading={handleLoading}>
+      <Toaster position="top-right" richColors />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/journal" element={<JournalPage />} />
+        <Route path="/stories" element={<StoriesPage />} />
+        <Route path="/expression" element={<ExpressionPage />} />
+        <Route path="/groups" element={<GroupsPage />} />
+        <Route path="/queries" element={<QueriesPage />} />
+        <Route path="/resources" element={<ResourcesPage />} />
+        <Route path="/mood" element={<MoodTracker onLoading={handleLoading} />} />
+        <Route path="/levels" element={<Levels onLoading={handleLoading} />} />
+        <Route path="/quiz" element={<Quiz onLoading={handleLoading} />} />
+        <Route path="/quiz-landing" element={<QuizLandingPage />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/live" element={<Live />} />
+        <Route path="/story/:id" element={<StoryPlayer />} />
+        <Route path="/story-learning/:id" element={<StoryLearning />} />
+        <Route path="/stories-list" element={<Stories />} />
+        <Route path="/loading" element={<LoadingSpinner />} />
+
+        {/* Catch all - navigate to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Layout>
   );
 };
 
-const App = () => {
+export default function App() {
   return (
-    <UserProvider>
+    <AuthProvider>
       <AppContent />
-    </UserProvider>
+    </AuthProvider>
   );
-};
-
-export default App;
+}

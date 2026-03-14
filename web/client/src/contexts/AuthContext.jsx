@@ -1,27 +1,32 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:5000/api';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [age, setAge] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Initialize from localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem('authToken');
     const storedUser = localStorage.getItem('authUser');
+    const storedAge = localStorage.getItem('userAge');
 
     if (storedToken && storedUser) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
+      if (storedAge) {
+        setAge(parseInt(storedAge));
+      }
     }
     setLoading(false);
   }, []);
 
-  const signUp = async (email, password, displayName, age, gender) => {
+  const signUp = async (email, password, displayName, userAge, gender) => {
     try {
       const response = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
@@ -30,7 +35,7 @@ export function AuthProvider({ children }) {
           email,
           password,
           displayName,
-          age: parseInt(age),
+          age: parseInt(userAge),
           gender: gender.toLowerCase(),
         }),
       });
@@ -43,6 +48,10 @@ export function AuthProvider({ children }) {
       const data = await response.json();
       setToken(data.token);
       setUser(data.user);
+      if (userAge) {
+        setAge(parseInt(userAge));
+        localStorage.setItem('userAge', userAge);
+      }
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('authUser', JSON.stringify(data.user));
 
@@ -121,22 +130,37 @@ export function AuthProvider({ children }) {
     } finally {
       setToken(null);
       setUser(null);
+      setAge(null);
       localStorage.removeItem('authToken');
       localStorage.removeItem('authUser');
+      localStorage.removeItem('userAge');
     }
   };
+
+  // Alias for logout (for consistency with component naming)
+  const logout = signOut;
+  
+  // Alias for isLoading (for consistency with component naming)
+  const isLoading = loading;
+  
+  // Alias for isSignedIn (for consistency with Clerk naming)
+  const isSignedIn = !!token;
 
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
+        age,
         loading,
+        isLoading,
         signUp,
         signIn,
         signInWithGoogle,
         signOut,
+        logout,
         isAuthenticated: !!token,
+        isSignedIn: !!token,
       }}
     >
       {children}

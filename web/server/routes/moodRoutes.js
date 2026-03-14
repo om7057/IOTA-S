@@ -1,13 +1,18 @@
 import express from 'express';
-import { MoodLog } from '../models/MoodLog.js';
+import { MoodLog } from '../models/index.js';
+import { verifyToken } from '../middleware/auth.js';
+import { Op } from 'sequelize';
 
 const router = express.Router();
 
 // Get all mood logs for a user
-router.get('/user/:clerkId', async (req, res) => {
+router.get('/user/:userId', verifyToken, async (req, res) => {
   try {
-    const { clerkId } = req.params;
-    const moodLogs = await MoodLog.find({ clerkId }).sort({ date: -1 });
+    const { userId } = req.params;
+    const moodLogs = await MoodLog.findAll({
+      where: { userId },
+      order: [['date', 'DESC']]
+    });
     res.json(moodLogs);
   } catch (error) {
     console.error('Error fetching mood logs:', error);
@@ -16,20 +21,23 @@ router.get('/user/:clerkId', async (req, res) => {
 });
 
 // Get mood logs for specific date range
-router.get('/user/:clerkId/range', async (req, res) => {
+router.get('/user/:userId/range', verifyToken, async (req, res) => {
   try {
-    const { clerkId } = req.params;
+    const { userId } = req.params;
     const { startDate, endDate } = req.query;
     
-    const query = { clerkId };
+    const whereClause = { userId };
     if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
+      whereClause.date = {
+        [Op.gte]: new Date(startDate),
+        [Op.lte]: new Date(endDate)
       };
     }
     
-    const moodLogs = await MoodLog.find(query).sort({ date: -1 });
+    const moodLogs = await MoodLog.findAll({
+      where: whereClause,
+      order: [['date', 'DESC']]
+    });
     res.json(moodLogs);
   } catch (error) {
     console.error('Error fetching mood logs:', error);
@@ -38,15 +46,17 @@ router.get('/user/:clerkId/range', async (req, res) => {
 });
 
 // Get today's mood log
-router.get('/user/:clerkId/today', async (req, res) => {
+router.get('/user/:userId/today', verifyToken, async (req, res) => {
   try {
-    const { clerkId } = req.params;
+    const { userId } = req.params;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const moodLog = await MoodLog.findOne({
-      clerkId,
-      date: { $gte: today }
+   const moodLog = await MoodLog.findOne({
+      where: {
+        userId,
+        date: { [Op.gte]: today }
+      }
     });
     
     res.json(moodLog || null);
@@ -57,17 +67,17 @@ router.get('/user/:clerkId/today', async (req, res) => {
 });
 
 // Create a new mood log
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
-    const { userId, clerkId, mood, moodIntensity, tags, notes } = req.body;
+    const { mood, moodIntensity, tags, notes } = req.body;
+    const userId = req.user.id;
     
-    if (!clerkId || !mood || !moodIntensity) {
+    if (!mood || !moodIntensity) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
     
-    const moodLog = new MoodLog({
+    const moodLog = await MoodLog.create({
       userId,
-      clerkId,
       mood,
       moodIntensity,
       tags: tags || [],
@@ -75,7 +85,6 @@ router.post('/', async (req, res) => {
       date: new Date()
     });
     
-    await moodLog.save();
     res.status(201).json(moodLog);
   } catch (error) {
     console.error('Error creating mood log:', error);
@@ -84,17 +93,17 @@ router.post('/', async (req, res) => {
 });
 
 // Update a mood log
-router.put('/:moodLogId', async (req, res) => {
+router.put('/:moodLogId', verifyToken, async (req, res) => {
   try {
     const { moodLogId } = req.params;
     const { mood, moodIntensity, tags, notes } = req.body;
     
-    const moodLog = await MoodLog.findByIdAndUpdate(
-      moodLogId,
-      { mood, moodIntensity, tags, notes, updatedAt: Date.now() },
-      { new: true }
-    );
+    const moodLog = await MoodLog.findByPk(moodLogId);
+    if (!moodLog) {
+      return res.status(404).json({ message: 'Mood log not found' });
+    }
     
+    await moodLog.update({ mood, moodIntensity, tags, notes });
     res.json(moodLog);
   } catch (error) {
     console.error('Error updating mood log:', error);
@@ -103,51 +112,20 @@ router.put('/:moodLogId', async (req, res) => {
 });
 
 // Delete a mood log
-router.delete('/:moodLogId', async (req, res) => {
+router.delete('/:moodLogId', verifyToken, async (req, res) => {
   try {
     const { moodLogId } = req.params;
-    await MoodLog.findByIdAndDelete(moodLogId);
+    const moodLog = await MoodLog.findByPk(moodLogId);
+    
+    if (!moodLog) {
+      return res.status(404).json({ message: 'Mood log not found' });
+    }
+    
+    await moodLog.destroy();
     res.json({ message: 'Mood log deleted' });
   } catch (error) {
     console.error('Error deleting mood log:', error);
     res.status(500).json({ message: 'Error deleting mood log' });
-  }
-});
-
-// Get mood statistics for a user (for mood trends)
-router.get('/user/:clerkId/stats', async (req, res) => {
-  try {
-    const { clerkId } = req.params;
-    const { days = 7 } = req.query;
-    
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    
-    const moodLogs = await MoodLog.find({
-      clerkId,
-      date: { $gte: startDate }
-    });
-    
-    // Calculate mood distribution
-    const moodStats = {};
-    moodLogs.forEach(log => {
-      moodStats[log.mood] = (moodStats[log.mood] || 0) + 1;
-    });
-    
-    // Calculate average intensity
-    const avgIntensity = moodLogs.length > 0 
-      ? moodLogs.reduce((sum, log) => sum + log.moodIntensity, 0) / moodLogs.length
-      : 0;
-    
-    res.json({
-      totalEntries: moodLogs.length,
-      moodDistribution: moodStats,
-      averageIntensity: avgIntensity.toFixed(2),
-      days
-    });
-  } catch (error) {
-    console.error('Error fetching mood stats:', error);
-    res.status(500).json({ message: 'Error fetching mood stats' });
   }
 });
 

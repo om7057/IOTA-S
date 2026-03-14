@@ -10,10 +10,16 @@ const userRoutes = require('./routes/users');
 const queryRoutes = require('./routes/queries');
 const groupRoutes = require('./routes/groups');
 const topicRoutes = require('./routes/topics');
+const postsRoutes = require('./routes/posts');
 const commentRoutes = require('./routes/comments');
 const likeRoutes = require('./routes/likes');
 const analysisRoutes = require('./routes/analysis');
 const journalRoutes = require('./routes/journal');
+const directMessagesRoutes = require('./routes/direct-messages');
+const moodsRoutes = require('./routes/moods');
+const quizzesRoutes = require('./routes/quizzes');
+const leaderboardsRoutes = require('./routes/leaderboards');
+const storiesRoutes = require('./routes/stories');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,12 +58,20 @@ app.use('/api/users', userRoutes);
 app.use('/api/queries', queryRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/topics', topicRoutes);
+app.use('/api/posts', postsRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/likes', likeRoutes);
 app.use('/api/analysis', analysisRoutes);
-app.use('/api/journal', journalRoutes);
+app.use('/api/journal-inputs', journalRoutes);
+app.use('/api/direct-messages', directMessagesRoutes);
+app.use('/api/moods', moodsRoutes);
+app.use('/api/quizzes', quizzesRoutes);
+app.use('/api/leaderboards', leaderboardsRoutes);
+app.use('/api/stories', storiesRoutes);
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`✓ Server is running on port ${PORT}`);
-  console.log(`✓ API available at http://localhost:${PORT}/api`);
+  console.log(`✓ API available at http://0.0.0.0:${PORT}/api`);
+  console.log(`✓ Available at http://localhost:${PORT}/api (host)`);
+  console.log(`✓ Available at http://10.0.2.2:${PORT}/api (Android emulator)`);
 });

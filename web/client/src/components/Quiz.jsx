@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useAuth } from "../contexts/AuthContext";
 import { Lightbulb, ChevronLeft, ChevronRight, Check, Trophy, Award, BarChart3, BookOpen } from "lucide-react";
 
 const Quiz = () => {
   const { storyId } = useParams();
-  const { user } = useUser();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [quizList, setQuizList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -20,7 +20,8 @@ const Quiz = () => {
       if (!user?.id) return;
       try {
         const res = await fetch(
-          `http://localhost:5000/api/users/clerk/${user.id}`
+          `http://localhost:5000/api/users/${user.id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
         setMongoUser(data);

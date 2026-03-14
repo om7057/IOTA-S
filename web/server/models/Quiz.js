@@ -1,23 +1,35 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../utils/database.js';
 
-const quizSchema = new mongoose.Schema({
-  story: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Story',
-    required: true
+export const Quiz = sequelize.define('Quiz', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  storyId: {
+    type: DataTypes.UUID,
+    allowNull: false
   },
   question: {
-    type: String,
-    required: true
+    type: DataTypes.TEXT,
+    allowNull: false
   },
   options: {
-    type: [String],
-    required: true
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    allowNull: false
   },
   correctAnswer: {
-    type: String,
-    required: true
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  points: {
+    type: DataTypes.INTEGER,
+    defaultValue: 10
   }
-}, { timestamps: true });
+}, {
+  timestamps: true,
+  tableName: 'quizzes'
+});
 
-export const Quiz = mongoose.model('Quiz', quizSchema);
+export default Quiz;

@@ -1,20 +1,35 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, BookOpen, BarChart3, Newspaper, Lightbulb, Shield, X, Smile, BookMarked, Zap } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { Home, BookOpen, BarChart3, Newspaper, Lightbulb, Shield, X, Smile, BookMarked, Zap, Users, HelpCircle, Heart } from "lucide-react";
 
 const Sidebar = ({ onClose, isMobile }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { age } = useAuth();
   
-  // Navigation items with Lucide icons
-  const sidebarItems = [
+  // Determine user type based on age
+  const userType = age && age >= 13 ? 'teen' : 'child';
+  
+  // Children navigation (age < 13)
+  const childrenItems = [
     { name: "Home", path: "/", icon: <Home className="w-5 h-5" /> },
-    { name: "My Feelings", path: "/mood", icon: <Smile className="w-5 h-5" /> },
-    { name: "My Journal", path: "/journal", icon: <BookMarked className="w-5 h-5" /> },
-    { name: "Safety Stories", path: "/story-learning", icon: <BookOpen className="w-5 h-5" /> },
+    { name: "Stories", path: "/stories", icon: <BookOpen className="w-5 h-5" /> },
+    { name: "Quizzes", path: "/quizzes", icon: <Lightbulb className="w-5 h-5" /> },
+    { name: "My Mood", path: "/mood", icon: <Smile className="w-5 h-5" /> },
     { name: "Leaderboard", path: "/leaderboard", icon: <BarChart3 className="w-5 h-5" /> },
-    { name: "Live", path: "/live", icon: <Newspaper className="w-5 h-5" /> },
-    { name: "Quiz Games", path: "/quizzes", icon: <Lightbulb className="w-5 h-5" /> },
   ];
+
+  // Teenager navigation (age >= 13)
+  const teenagerItems = [
+    { name: "Home", path: "/", icon: <Home className="w-5 h-5" /> },
+    { name: "Expression", path: "/expression", icon: <Heart className="w-5 h-5" /> },
+    { name: "My Journal", path: "/journal", icon: <BookMarked className="w-5 h-5" /> },
+    { name: "Groups", path: "/groups", icon: <Users className="w-5 h-5" /> },
+    { name: "Questions", path: "/queries", icon: <HelpCircle className="w-5 h-5" /> },
+    { name: "Resources", path: "/resources", icon: <Newspaper className="w-5 h-5" /> },
+  ];
+
+  const sidebarItems = userType === 'child' ? childrenItems : teenagerItems;
 
   const handleNavigate = (path) => {
     navigate(path);
@@ -33,8 +48,10 @@ const Sidebar = ({ onClose, isMobile }) => {
               <Shield className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Safe Space</h2>
-              <p className="text-xs text-gray-500">Learn & Stay Safe</p>
+              <h2 className="text-lg font-bold text-gray-900">IOTA-S</h2>
+              <p className="text-xs text-gray-500">
+                {userType === 'child' ? 'Safe Learning' : 'Teen Community'}
+              </p>
             </div>
           </div>
           
@@ -47,6 +64,16 @@ const Sidebar = ({ onClose, isMobile }) => {
               <X className="w-5 h-5" />
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Age Badge */}
+      <div className="px-4 py-3">
+        <div className="bg-blue-50 rounded-lg p-3 text-center">
+          <p className="text-xs text-gray-600">Age: <span className="font-bold text-blue-600">{age}</span></p>
+          <p className="text-xs text-gray-500 mt-1">
+            {userType === 'child' ? '👶 Child Mode' : '👨‍💼 Teen Mode'}
+          </p>
         </div>
       </div>
 
@@ -92,7 +119,7 @@ const Sidebar = ({ onClose, isMobile }) => {
             </div>
             <div>
               <p className="font-semibold text-sm">Stay Safe!</p>
-              <p className="text-xs text-gray-400">Have Fun Learning</p>
+              <p className="text-xs text-gray-400">Keep Learning</p>
             </div>
           </div>
           <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">

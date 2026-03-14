@@ -44,20 +44,20 @@ export default function JournalScreen() {
   
   // Fetch journal entries on component mount
   useEffect(() => {
-    if (session?.access_token) {
+    if (session?.token) {
       fetchJournalEntries();
     }
   }, [session]);
   
   const fetchJournalEntries = async () => {
-    if (!session?.access_token) return;
+    if (!session?.token) return;
     
     setRefreshing(true);
     try {
       const response = await fetch(`${API_URL}/journal-inputs`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
         },
       });
 
@@ -86,10 +86,10 @@ export default function JournalScreen() {
       return;
     }
 
-    if (!session?.access_token) {
+    if (!session?.token) {
       Alert.alert('Error', 'Please sign in to save journal entries');
       return;
-    }
+    };
 
     setLoading(true);
     try {
@@ -101,7 +101,7 @@ export default function JournalScreen() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${session?.token}`,
           },
           body: JSON.stringify({ title, content }),
         });
@@ -111,7 +111,7 @@ export default function JournalScreen() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${session?.token}`,
           },
           body: JSON.stringify({ title, content }),
         });
@@ -155,7 +155,7 @@ export default function JournalScreen() {
   };
   
   const handleDeleteEntry = async (entryId: string) => {
-    if (!session?.access_token) return;
+    if (!session?.token) return;
     
     Alert.alert(
       'Delete Entry',
@@ -170,7 +170,7 @@ export default function JournalScreen() {
               const response = await fetch(`${API_URL}/journal-inputs/${entryId}`, {
                 method: 'DELETE',
                 headers: {
-                  'Authorization': `Bearer ${session.access_token}`,
+                  'Authorization': `Bearer ${session?.token}`,
                 },
               });
               
@@ -219,11 +219,11 @@ export default function JournalScreen() {
       setLoadingGroups(true);
       
       // Get user ID and token from session
-      if (!session?.user?.id || !session?.access_token) {
+      if (!session?.user?.id || !session?.token) {
         throw new Error('User not authenticated');
       }
       const userId = session.user.id;
-      const token = session.access_token;
+      const token = session?.token;
       
       // First analyze queries to get group suggestions
       const analyzeResponse = await fetch(`${API_URL}/api/users/${userId}/analyze-queries`, {

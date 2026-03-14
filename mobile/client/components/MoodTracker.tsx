@@ -54,7 +54,7 @@ const MoodTracker = () => {
 
   const fetchTodayMood = async () => {
     try {
-      const response = await fetch(`http://10.0.2.2:3000/api/moods/user/${session?.user?.id}/today`);
+      const response = await fetch(`http://10.236.168.104:3000/api/moods/user/${session?.user?.id}/today`);
       if (response.ok) {
         const data = await response.json();
         setTodayMood(data);
@@ -75,7 +75,7 @@ const MoodTracker = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://10.0.2.2:3000/api/moods', {
+      const response = await fetch('http://10.236.168.104:3000/api/moods', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -67,24 +67,24 @@ export default function ExpressionScreen() {
 
   // Fetch topics on component mount
   useEffect(() => {
-    if (session?.access_token) {
+    if (session?.token) {
       fetchTopics();
     }
-  }, [session?.access_token]);
+  }, [session?.token]);
 
   // Fetch posts when a topic is selected
   useEffect(() => {
-    if (selectedTopic && session?.access_token) {
+    if (selectedTopic && session?.token) {
       fetchPosts(selectedTopic.topic_id);
     }
-  }, [selectedTopic, session?.access_token]);
+  }, [selectedTopic, session?.token]);
 
   const fetchTopics = async () => {
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/topics`, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -113,7 +113,7 @@ export default function ExpressionScreen() {
       setLoading(true);
       const response = await fetch(`${API_URL}/topics/${topicId}/posts`, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -130,7 +130,7 @@ export default function ExpressionScreen() {
           try {
             const likeResponse = await fetch(`${API_URL}/posts/${post.post_id}/like`, {
               headers: {
-                'Authorization': `Bearer ${session?.access_token}`,
+                'Authorization': `Bearer ${session?.token}`,
                 'Content-Type': 'application/json',
               },
             });
@@ -162,7 +162,7 @@ export default function ExpressionScreen() {
       setLoadingComments(true);
       const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -182,7 +182,7 @@ export default function ExpressionScreen() {
   };
 
   const handleCreatePost = async () => {
-    if (!newPostContent.trim() || !selectedTopic || !session?.access_token || sending) return;
+    if (!newPostContent.trim() || !selectedTopic || !session?.token || sending) return;
 
     try {
       setSending(true);
@@ -190,7 +190,7 @@ export default function ExpressionScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
         },
         body: JSON.stringify({
           content: newPostContent.trim(),
@@ -218,7 +218,7 @@ export default function ExpressionScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
         },
       });
 
@@ -249,7 +249,7 @@ export default function ExpressionScreen() {
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !selectedPost || !session?.access_token || sendingComment) return;
+    if (!newComment.trim() || !selectedPost || !session?.token || sendingComment) return;
 
     try {
       setSendingComment(true);
@@ -257,7 +257,7 @@ export default function ExpressionScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${session?.token}`,
         },
         body: JSON.stringify({
           content: newComment.trim(),

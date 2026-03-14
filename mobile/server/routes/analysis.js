@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/supabase');
+const db = require('../config/database');
 const { verifyToken } = require('../middleware/auth');
 
 router.post('/analyze-queries', verifyToken, async (req, res) => {
@@ -48,38 +48,28 @@ router.post('/analyze-queries', verifyToken, async (req, res) => {
       }
 
       console.log('Deleting previous analysis results...');
-      const { error: deleteError } = await supabase
-        .from('analysis_results')
-        .delete()
-        .eq('user_id', userId);
+      await db.query('DELETE FROM analysis_results WHERE user_id = $1', [userId]);
 
-      if (deleteError) {
-        console.error('Error deleting previous analysis:', deleteError);
-        throw new Error('Failed to clear previous analysis results');
-      }
-
-      const analysisData = analysisResult.results.map((result) => ({
-        user_id: userId,
-        query_text: result['Journal Entry'],
-        detected_emotion: result['Detected Emotion'],
-        confidence_score: result['Confidence Score'],
-        extracted_topic: result['Extracted Topic'],
-        personalized_feedback: result['Personalized Feedback']
-      }));
+      const analysisData = analysisResult.results.map((result) => [
+        userId,
+        result['Journal Entry'],
+        result['Detected Emotion'],
+        result['Confidence Score'],
+        result['Extracted Topic'],
+        result['Personalized Feedback']
+      ]);
 
       console.log('Prepared analysis data for storage:', JSON.stringify(analysisData, null, 2));
 
-      const { data: insertedData, error: insertError } = await supabase
-        .from('analysis_results')
-        .insert(analysisData)
-        .select();
-
-      if (insertError) {
-        console.error('Error storing analysis results:', insertError);
-        throw new Error('Failed to store analysis results');
+      for (const data of analysisData) {
+        await db.query(
+          `INSERT INTO analysis_results (user_id, query_text, detected_emotion, confidence_score, extracted_topic, personalized_feedback)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          data
+        );
       }
 
-      console.log('Successfully stored analysis results:', JSON.stringify(insertedData, null, 2));
+      console.log('Successfully stored analysis results');
       res.json({ message: 'Analysis completed and results stored successfully' });
     } catch (error) {
       console.error('Analysis error:', error);
@@ -99,18 +89,12 @@ router.get('/users/:userId/analysis', verifyToken, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    const { data, error } = await supabase
-      .from('analysis_results')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    const result = await db.query(
+      'SELECT * FROM analysis_results WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
     
-    if (error) {
-      console.error('Error fetching analysis results:', error);
-      return res.status(400).json({ error: error.message });
-    }
-    
-    res.json(data);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching analysis results:', error);
     res.status(500).json({ error: error.message });

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/supabase');
+const db = require('../config/database');
 const { verifyToken } = require('../middleware/auth');
 
 router.post('/join', verifyToken, async (req, res) => {
@@ -8,24 +8,23 @@ router.post('/join', verifyToken, async (req, res) => {
     const { groupName } = req.body;
     const userId = req.user.id;
 
-    const { data: existingGroup, error: groupError } = await supabase
-      .from('groups')
-      .select('*')
-      .eq('group_name', groupName)
-      .single();
+    const groupResult = await db.query(
+      'SELECT * FROM groups WHERE group_name = $1',
+      [groupName]
+    );
 
-    if (groupError || !existingGroup) {
+    if (groupResult.rows.length === 0) {
       return res.status(404).json({ error: 'Group does not exist' });
     }
 
-    const { data: existingMembership, error: membershipError } = await supabase
-      .from('group_members')
-      .select('*')
-      .eq('group_id', existingGroup.group_id)
-      .eq('user_id', userId)
-      .single();
+    const existingGroup = groupResult.rows[0];
 
-    if (existingMembership) {
+    const membershipResult = await db.query(
+      'SELECT * FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [existingGroup.group_id, userId]
+    );
+
+    if (membershipResult.rows.length > 0) {
       return res.json({ 
         success: true, 
         message: 'Already a member of this group',
@@ -33,19 +32,10 @@ router.post('/join', verifyToken, async (req, res) => {
       });
     }
 
-    const { data: membership, error: joinError } = await supabase
-      .from('group_members')
-      .insert([{
-        group_id: existingGroup.group_id,
-        user_id: userId
-      }])
-      .select()
-      .single();
-
-    if (joinError) {
-      console.error('Error joining group:', joinError);
-      return res.status(400).json({ error: joinError.message });
-    }
+    await db.query(
+      'INSERT INTO group_members (group_id, user_id) VALUES ($1, $2)',
+      [existingGroup.group_id, userId]
+    );
 
     res.json({ 
       success: true, 
@@ -63,47 +53,33 @@ router.get('/', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { data, error } = await supabase
-      .from('group_members')
-      .select(`
-        id,
-        joined_at,
-        groups:group_id (
-          group_id,
-          group_name,
-          created_at
-        )
-      `)
-      .eq('user_id', userId);
+    const result = await db.query(
+      `SELECT g.id as group_id, g.name as group_name, g.created_at
+       FROM groups g
+       JOIN group_members gm ON g.id = gm.group_id
+       WHERE gm.user_id = $1`,
+      [userId]
+    );
 
-    if (error) {
-      console.error('Error fetching groups:', error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    // Format the data
-    const groups = data.map(item => item.groups);
-
-    res.json(groups);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching groups:', error);
-    res.status(500).json({ error: error.message });
+    // If tables don't exist, return empty array
+    if (error.code === '42P01') {
+      res.json([]);
+    } else {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
 router.get('/available', verifyToken, async (req, res) => {
   try {
-    const { data: allGroups, error: groupsError } = await supabase
-      .from('groups')
-      .select('*')
-      .order('group_name', { ascending: true });
+    const result = await db.query(
+      'SELECT * FROM groups ORDER BY group_name ASC'
+    );
 
-    if (groupsError) {
-      console.error('Error fetching groups:', groupsError);
-      return res.status(400).json({ error: groupsError.message });
-    }
-
-    res.json(allGroups);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching available groups:', error);
     res.status(500).json({ error: error.message });
@@ -115,39 +91,26 @@ router.get('/:groupId/messages', verifyToken, async (req, res) => {
     const { groupId } = req.params;
     const userId = req.user.id;
 
-    const { data: membership, error: membershipError } = await supabase
-      .from('group_members')
-      .select('*')
-      .eq('group_id', groupId)
-      .eq('user_id', userId)
-      .single();
+    const membershipResult = await db.query(
+      'SELECT * FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [groupId, userId]
+    );
 
-    if (membershipError || !membership) {
+    if (membershipResult.rows.length === 0) {
       return res.status(403).json({ error: 'You are not a member of this group' });
     }
 
-    const { data: messages, error: messagesError } = await supabase
-      .from('group_messages')
-      .select(`
-        message_id,
-        content,
-        created_at,
-        users:user_id (
-          id,
-          display_name,
-          email
-        )
-      `)
-      .eq('group_id', groupId)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    const result = await db.query(
+      `SELECT gm.message_id, gm.content, gm.created_at, u.id as user_id, u.display_name, u.email
+       FROM group_messages gm
+       JOIN users u ON gm.user_id = u.id
+       WHERE gm.group_id = $1
+       ORDER BY gm.created_at DESC
+       LIMIT 50`,
+      [groupId]
+    );
 
-    if (messagesError) {
-      console.error('Error fetching messages:', messagesError);
-      return res.status(400).json({ error: messagesError.message });
-    }
-
-    res.json(messages);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching group messages:', error);
     res.status(500).json({ error: error.message });
@@ -160,45 +123,31 @@ router.post('/:groupId/messages', verifyToken, async (req, res) => {
     const { content } = req.body;
     const userId = req.user.id;
 
-    const { data: membership, error: membershipError } = await supabase
-      .from('group_members')
-      .select('*')
-      .eq('group_id', groupId)
-      .eq('user_id', userId)
-      .single();
+    const membershipResult = await db.query(
+      'SELECT * FROM group_members WHERE group_id = $1 AND user_id = $2',
+      [groupId, userId]
+    );
 
-    if (membershipError || !membership) {
+    if (membershipResult.rows.length === 0) {
       return res.status(403).json({ error: 'You are not a member of this group' });
     }
 
-    const { data: message, error: messageError } = await supabase
-      .from('group_messages')
-      .insert([{
-        group_id: groupId,
-        user_id: userId,
-        content
-      }])
-      .select()
-      .single();
+    const messageResult = await db.query(
+      'INSERT INTO group_messages (group_id, user_id, content) VALUES ($1, $2, $3) RETURNING *',
+      [groupId, userId, content]
+    );
 
-    if (messageError) {
-      console.error('Error sending message:', messageError);
-      return res.status(400).json({ error: messageError.message });
-    }
+    const userResult = await db.query(
+      'SELECT id, display_name, email FROM users WHERE id = $1',
+      [userId]
+    );
 
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('id, display_name, email')
-      .eq('id', userId)
-      .single();
-
-    if (userError) {
-      console.error('Error fetching user data:', userError);
-    }
-
+    const message = messageResult.rows[0];
     const messageWithUser = {
       ...message,
-      users: userData || null
+      user_id: userResult.rows[0]?.id,
+      display_name: userResult.rows[0]?.display_name,
+      email: userResult.rows[0]?.email
     };
 
     res.status(201).json(messageWithUser);

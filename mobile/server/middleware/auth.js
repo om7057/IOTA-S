@@ -1,4 +1,6 @@
-const supabase = require('../config/supabase');
+const jwt = require('jsonwebtoken');
+
+const SECRET_KEY = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -10,13 +12,12 @@ const verifyToken = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    const { data, error } = await supabase.auth.getUser(token);
-    
-    if (error || !data.user) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-    
-    req.user = data.user;
+    const decoded = jwt.verify(token, SECRET_KEY);
+    req.user = {
+      id: decoded.id,
+      email: decoded.email,
+      displayName: decoded.displayName
+    };
     next();
   } catch (error) {
     console.error('Token verification error:', error);

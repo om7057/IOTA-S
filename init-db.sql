@@ -44,10 +44,11 @@ CREATE TABLE IF NOT EXISTS journal_entries (
 -- Create stories table
 CREATE TABLE IF NOT EXISTS stories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT,
   content TEXT,
-  topic_id UUID,
+  topic_id UUID REFERENCES topics(id) ON DELETE CASCADE,
   level INT,
   image_url TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

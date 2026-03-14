@@ -1,22 +1,34 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../utils/database.js';
 
-const optionSchema = new mongoose.Schema({
-  text: { type: String, required: true },
-  to: { type: Number, required: true }  
-}, { _id: false });
+export const Story = sequelize.define('Story', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  title: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false
+  },
+  description: DataTypes.TEXT,
+  levelId: {
+    type: DataTypes.UUID,
+    allowNull: true
+  },
+  topicId: {
+    type: DataTypes.UUID,
+    allowNull: false
+  },
+  scenes: {
+    type: DataTypes.JSONB,
+    allowNull: false,
+    defaultValue: []
+  }
+}, {
+  timestamps: true,
+  tableName: 'stories'
+});
 
-const sceneSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  image: { type: String },
-  options: { type: [optionSchema], required: true }
-}, { _id: false });
-
-const storySchema = new mongoose.Schema({
-  title: { type: String, required: true, unique: true },
-  description: { type: String },
-  level: { type: mongoose.Schema.Types.ObjectId, ref: 'StoryLevel', required: true },
-  topic: { type: mongoose.Schema.Types.ObjectId, ref: 'Topic', required: true },
-  scenes: { type: [sceneSchema], required: true }
-}, { timestamps: true });
-
-export const Story = mongoose.model('Story', storySchema);
+export default Story;

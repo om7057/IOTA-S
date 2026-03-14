@@ -1,9 +1,22 @@
-import mongoose from 'mongoose';
+import { DataTypes } from 'sequelize';
+import sequelize from '../utils/database.js';
 
-const topicSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  description: { type: String },
-  imageUrl: { type: String }
-}, { timestamps: true });
+export const Topic = sequelize.define('Topic', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    unique: true,
+    allowNull: false
+  },
+  description: DataTypes.TEXT,
+  imageUrl: DataTypes.STRING
+}, {
+  timestamps: true,
+  tableName: 'topics'
+});
 
-export const Topic = mongoose.model('Topic', topicSchema);
+export default Topic;

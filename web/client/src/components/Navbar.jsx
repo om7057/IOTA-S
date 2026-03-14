@@ -1,10 +1,12 @@
-import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { BookOpen, Menu, X } from "lucide-react";
+import { BookOpen, Menu, X, LogOut } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const navLinks = [
@@ -44,24 +46,27 @@ const Navbar = () => {
 
           {/* Auth */}
           <div className="flex items-center gap-3">
-            <SignedOut>
+            {!user ? (
               <Link 
                 to="/login" 
                 className="btn btn-primary"
               >
                 Login
               </Link>
-            </SignedOut>
-
-            <SignedIn>
-              <UserButton 
-                appearance={{
-                  elements: {
-                    userButtonAvatarBox: "w-9 h-9 ring-2 ring-sky-100",
-                  }
-                }}
-              />
-            </SignedIn>
+            ) : (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => logout()}
+                  className="p-2 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white font-bold text-xs ring-2 ring-sky-100">
+                  {user?.email?.charAt(0).toUpperCase() || "U"}
+                </div>
+              </div>
+            )}
 
             {/* Mobile menu button */}
             <button

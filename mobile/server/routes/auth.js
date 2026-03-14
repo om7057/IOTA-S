@@ -28,27 +28,35 @@ const createJWTToken = (user) => {
 router.post('/signup', async (req, res) => {
   try {
     const { email, password, displayName, age, gender } = req.body;
+    console.log('✓ Signup request received:', { email, displayName, age, gender });
 
     // Validate inputs
     if (!email || !password || !displayName) {
+      console.log('✗ Validation failed: Missing required fields');
       return res.status(400).json({ error: 'Email, password, and displayName are required' });
     }
 
     // Check if user already exists
+    console.log('Checking if user exists...');
     const existingUser = await db.getUserByEmail(email);
     if (existingUser.rows.length > 0) {
+      console.log('✗ User already exists:', email);
       return res.status(400).json({ error: 'Email already registered' });
     }
 
     // Hash password
+    console.log('Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user in database
+    console.log('Creating user in database...');
     const result = await db.createUser(email, displayName, hashedPassword, age || null, gender || null);
     const user = result.rows[0];
+    console.log('✓ User created:', user.id);
 
     // Create JWT token
     const token = createJWTToken(user);
+    console.log('✓ Token created');
 
     // Return user and token
     res.status(201).json({
@@ -63,7 +71,7 @@ router.post('/signup', async (req, res) => {
       token
     });
   } catch (error) {
-    console.error('Signup error:', error);
+    console.error('✗ Signup error:', error);
     res.status(500).json({ error: error.message });
   }
 });

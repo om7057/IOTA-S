@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useUser, useClerk } from "@clerk/clerk-react";
+import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, User, BarChart3, Settings, LogOut } from "lucide-react";
 
 const ProfileDropdown = () => {
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -21,8 +20,8 @@ const ProfileDropdown = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
+    logout();
     navigate("/login");
   };
 
@@ -32,11 +31,9 @@ const ProfileDropdown = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 transition-colors"
       >
-        <img
-          src={user?.imageUrl}
-          alt={user?.fullName}
-          className="w-9 h-9 rounded-xl object-cover ring-2 ring-sky-100"
-        />
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white font-bold text-xs">
+          {user?.email?.charAt(0).toUpperCase() || "U"}
+        </div>
         <ChevronDown 
           className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />

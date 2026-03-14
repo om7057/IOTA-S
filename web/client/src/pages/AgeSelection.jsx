@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUserProfile } from '../contexts/UserContext';
+import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const AgeSelection = () => {
   const navigate = useNavigate();
-  const { setUserAge } = useUserProfile();
+  const { user, token } = useAuth();
   const [selectedAge, setSelectedAge] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -14,14 +14,33 @@ const AgeSelection = () => {
     setLoading(true);
     
     try {
-      const success = await setUserAge(age);
-      if (success) {
+      // Update age in backend
+      const response = await fetch(`http://localhost:5000/api/users/${user.id}/age`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ age })
+      });
+
+      if (response.ok) {
+        // Update localStorage
+        localStorage.setItem('userAge', age);
+        const updatedUser = { ...user, age };
+        localStorage.setItem('authUser', JSON.stringify(updatedUser));
+        
         toast.success(`Welcome! You're all set! 🎉`);
-        navigate('/', { replace: true });
+        // Now redirect to home where user can start using the app
+        window.location.href = '/';
       } else {
         toast.error('Failed to save age. Please try again.');
         setSelectedAge(null);
       }
+    } catch (error) {
+      console.error('Error setting age:', error);
+      toast.error('Failed to save age. Please try again.');
+      setSelectedAge(null);
     } finally {
       setLoading(false);
     }
