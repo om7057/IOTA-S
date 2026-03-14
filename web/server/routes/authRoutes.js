@@ -69,56 +69,6 @@ router.post('/oauth/google', async (req, res) => {
   }
 });
 
-// OAuth callback - GitHub
-router.post('/oauth/github', async (req, res) => {
-  try {
-    const { login, name, avatar_url, id } = req.body;
-    
-    if (!login || !id) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-
-    let user = await User.findOne({ where: { username: login } });
-    
-    if (!user) {
-      const userId = uuidv4();
-      user = await User.create({
-        userId,
-        username: login,
-        email: `${login}@github.com`,
-        firstName: name?.split(' ')[0] || login,
-        lastName: name?.split(' ')[1] || '',
-        imageUrl: avatar_url,
-        oauthProvider: 'github'
-      });
-    } else if (user.oauthProvider !== 'github') {
-      await user.update({ 
-        oauthProvider: 'github',
-        imageUrl: avatar_url 
-      });
-    }
-
-    const { token, refreshToken } = generateTokens(user.userId);
-    
-    res.json({
-      success: true,
-      token,
-      refreshToken,
-      user: {
-        id: user.userId,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        imageUrl: user.imageUrl,
-        oauthProvider: user.oauthProvider
-      }
-    });
-  } catch (error) {
-    console.error('GitHub OAuth error:', error);
-    res.status(500).json({ message: 'Authentication failed' });
-  }
-});
-
 // Refresh token
 router.post('/refresh', async (req, res) => {
   try {

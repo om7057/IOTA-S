@@ -20,7 +20,13 @@ import Live from "./components/Live";
 import StoryPlayer from "./components/StoryPlayer";
 import StoryLearning from "./components/StoryLearning";
 import Stories from "./components/Stories";
+import StoryWithChallenges from "./components/StoryWithChallenges";
+import UnitsAndLessons from "./components/UnitsAndLessons";
 import QuizLandingPage from "./pages/QuizLandingPage";
+import TeenForum from "./pages/TeenForum";
+import TeenJournal from "./pages/TeenJournal";
+import TeenCommunities from "./pages/TeenCommunities";
+import TeenMessages from "./pages/TeenMessages";
 import { Toaster } from "react-hot-toast";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 
@@ -91,7 +97,19 @@ const AppContent = () => {
         <Route path="/story/:id" element={<StoryPlayer />} />
         <Route path="/story-learning/:id" element={<StoryLearning />} />
         <Route path="/stories-list" element={<Stories />} />
+        <Route path="/units/:topicId" element={<UnitsAndLessons />} />
+        <Route path="/lesson/:lessonId" element={<StoryWithChallenges />} />
         <Route path="/loading" element={<LoadingSpinner />} />
+
+        {/* Teen Section Routes */}
+        {age && age >= 13 && (
+          <>
+            <Route path="/teen/forum" element={<TeenForum />} />
+            <Route path="/teen/journal" element={<TeenJournal />} />
+            <Route path="/teen/community" element={<TeenCommunities />} />
+            <Route path="/teen/messages" element={<TeenMessages />} />
+          </>
+        )}
 
         {/* Catch all - navigate to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

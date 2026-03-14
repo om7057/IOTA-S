@@ -72,7 +72,7 @@ const StoryLearning = () => {
             <button
               key={topic._id}
               className="card card-hover p-6 text-left group"
-              onClick={() => navigate(`/levels/${topic._id}`)}
+              onClick={() => navigate(`/units/${topic._id}`)}
             >
               <div className={`w-14 h-14 rounded-xl ${getTopicColor(index)} flex items-center justify-center text-white mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
                 {getTopicIcon(topic.name)}

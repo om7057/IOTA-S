@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
       include: [
         {
           model: Story,
-          as: 'stories',
+          as: 'Stories',
           attributes: ['id', 'title', 'description']
         }
       ],
@@ -24,6 +24,20 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get all posts/stories
+router.get('/posts', async (req, res) => {
+  try {
+    const stories = await Story.findAll({
+      attributes: ['id', 'title', 'description', 'topicId'],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(stories);
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    res.status(500).json({ message: 'Error fetching posts' });
+  }
+});
+
 // Get a single topic with stories
 router.get('/:topicId', async (req, res) => {
   try {
@@ -32,7 +46,7 @@ router.get('/:topicId', async (req, res) => {
       include: [
         {
           model: Story,
-          as: 'stories',
+          as: 'Stories',
           attributes: ['id', 'title', 'description', 'levelId']
         }
       ]
@@ -116,6 +130,52 @@ router.delete('/:topicId', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Error deleting topic:', error);
     res.status(500).json({ message: 'Error deleting topic' });
+  }
+});
+
+// Get posts/stories for a specific topic
+router.get('/:topicId/posts', async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const stories = await Story.findAll({
+      where: { topicId },
+      attributes: ['id', 'title', 'description', 'topicId'],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(stories);
+  } catch (error) {
+    console.error('Error fetching posts for topic:', error);
+    res.status(500).json({ message: 'Error fetching posts' });
+  }
+});
+
+// Create a post/story for a specific topic
+router.post('/:topicId/posts', verifyToken, async (req, res) => {
+  try {
+    const { topicId } = req.params;
+    const { title, content, userId } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    // Verify topic exists
+    const topic = await Topic.findByPk(topicId);
+    if (!topic) {
+      return res.status(404).json({ message: 'Topic not found' });
+    }
+
+    const story = await Story.create({
+      title,
+      description: content,
+      topicId,
+      userId
+    });
+
+    res.status(201).json(story);
+  } catch (error) {
+    console.error('Error creating post:', error);
+    res.status(500).json({ message: 'Error creating post' });
   }
 });
 

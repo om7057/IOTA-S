@@ -65,7 +65,7 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:3000/api/auth/google/web');
+      const response = await fetch('http://localhost:5000/api/auth/google/web');
       const data = await response.json();
 
       if (data.authUrl) {

@@ -112,6 +112,13 @@ export default function StoriesScreen() {
     }
   };
 
+  const handleNavigateToUnits = () => {
+    // Navigate to the new hierarchical units workflow
+    if (selectedTopicId) {
+      router.push(`/units/${selectedTopicId}`);
+    }
+  };
+
   const renderTopicItem = ({ item }: { item: Topic }) => (
     <TouchableOpacity
       style={[
@@ -166,6 +173,15 @@ export default function StoriesScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Story Adventures</Text>
         <Text style={styles.headerSubtitle}>Choose your learning journey</Text>
+        <TouchableOpacity
+          style={styles.newWorkflowButton}
+          onPress={handleNavigateToUnits}
+        >
+          <Ionicons name="layers-outline" size={16} color="#ffffff" />
+          <Text style={styles.newWorkflowButtonText}>
+            Try New Units & Lessons →
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Topics tabs - using ScrollView instead of FlatList to avoid nested VirtualizedList warning */}
@@ -235,6 +251,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#e0e7ff',
     marginTop: 4,
+    marginBottom: 12,
+  },
+  newWorkflowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  newWorkflowButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   topicsContainer: {
     paddingHorizontal: 15,

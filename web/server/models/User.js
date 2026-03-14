@@ -13,7 +13,7 @@ export const User = sequelize.define('User', {
     allowNull: false
   },
   oauthProvider: {
-    type: DataTypes.ENUM('google', 'github', 'local'),
+    type: DataTypes.ENUM('google', 'local'),
     allowNull: false
   },
   username: DataTypes.STRING,

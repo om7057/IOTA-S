@@ -7,7 +7,7 @@ const GroupsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     fetchGroups();
@@ -18,13 +18,17 @@ const GroupsPage = () => {
       setLoading(true);
       const response = await fetch(`${API_URL}/groups`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      setGroups(data || []);
+      setGroups(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching groups:', error);
+      setGroups([]);
     } finally {
       setLoading(false);
     }
@@ -38,7 +42,7 @@ const GroupsPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify({ name: newGroupName }),
       });

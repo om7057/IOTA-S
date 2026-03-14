@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255),
   age INT,
   gender VARCHAR(50),
-  auth_method VARCHAR(50) DEFAULT 'email', -- 'email', 'google', 'github'
+  auth_method VARCHAR(50) DEFAULT 'email', -- 'email', 'google'
   google_id VARCHAR(255) UNIQUE,
   avatar_url TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -8,7 +8,7 @@ const QueriesPage = () => {
   const [newQuestion, setNewQuestion] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('general');
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   const categories = [
     { id: 'general', label: 'General' },
@@ -27,13 +27,17 @@ const QueriesPage = () => {
       setLoading(true);
       const response = await fetch(`${API_URL}/queries`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      setQueries(data || []);
+      setQueries(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching queries:', error);
+      setQueries([]);
     } finally {
       setLoading(false);
     }
@@ -47,7 +51,7 @@ const QueriesPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify({
           question: newQuestion,

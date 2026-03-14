@@ -16,6 +16,16 @@ import newsStoryRoutes from './routes/newsStoryRoutes.js';
 import seedRoutes from './routes/seedRoutes.js';
 import moodRoutes from './routes/moodRoutes.js';
 import journalRoutes from './routes/journalRoutes.js';
+import unitRoutes from './routes/unitRoutes.js';
+import lessonRoutes from './routes/lessonRoutes.js';
+import challengeRoutes from './routes/challengeRoutes.js';
+import challengeOptionRoutes from './routes/challengeOptionRoutes.js';
+import teensDiscussionRoutes from './routes/teensDiscussionRoutes.js';
+import teenJournalRoutes from './routes/teenJournalRoutes.js';
+import teenGroupRoutes from './routes/teenGroupRoutes.js';
+import teenDirectMessageRoutes from './routes/teenDirectMessageRoutes.js';
+import teenVerificationRoutes from './routes/teenVerificationRoutes.js';
+import queriesRoutes from './routes/queriesRoutes.js';
 
 dotenv.config();
 
@@ -54,6 +64,16 @@ app.use('/api/quiz-progress', progressRoutes);
 app.use('/api/seed', seedRoutes);
 app.use('/api/moods', moodRoutes);
 app.use('/api/journals', journalRoutes);
+app.use('/api/units', unitRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/challenges', challengeRoutes);
+app.use('/api/challenge-options', challengeOptionRoutes);
+app.use('/api/teen/discussions', teensDiscussionRoutes);
+app.use('/api/teen/journal', teenJournalRoutes);
+app.use('/api/teen/groups', teenGroupRoutes);
+app.use('/api/teen/messages', teenDirectMessageRoutes);
+app.use('/api/teen/verification', teenVerificationRoutes);
+app.use('/api/queries', queriesRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });

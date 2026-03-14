@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../utils/database.js';
 
-export const Story = sequelize.define('Story', {
+export const Lesson = sequelize.define('Lesson', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -9,30 +9,20 @@ export const Story = sequelize.define('Story', {
   },
   title: {
     type: DataTypes.STRING,
-    unique: true,
     allowNull: false
   },
   description: DataTypes.TEXT,
-  levelId: {
-    type: DataTypes.UUID,
-    allowNull: true
-  },
-  topicId: {
+  unitId: {
     type: DataTypes.UUID,
     allowNull: false
   },
-  lessonId: {
-    type: DataTypes.UUID,
-    allowNull: true
-  },
-  scenes: {
-    type: DataTypes.JSONB,
-    allowNull: false,
-    defaultValue: []
+  order: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   }
 }, {
   timestamps: true,
-  tableName: 'stories'
+  tableName: 'lessons'
 });
 
-export default Story;
+export default Lesson;

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { GoogleLogin } from "@react-oauth/google";
-import { Github } from "lucide-react";
 import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
 
@@ -81,55 +80,7 @@ const Login = () => {
     toast.error("Failed to sign in with Google. Please try again.");
   };
 
-  // Handle GitHub OAuth
-  const handleGitHubLogin = async () => {
-    try {
-      setIsLoading(true);
-      console.log("Starting GitHub OAuth...");
-      
-      const oauthData = {
-        login: "testuser_github",
-        name: "Test User",
-        avatar_url: "https://via.placeholder.com/150",
-        id: "github_" + Date.now()
-      };
-      
-      console.log("Sending GitHub OAuth data:", oauthData);
-      
-      const response = await fetch("http://localhost:5000/api/auth/oauth/github", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(oauthData)
-      });
 
-      console.log("GitHub OAuth response status:", response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("GitHub OAuth error response:", errorData);
-        throw new Error(errorData.message || "Failed to sign in with GitHub");
-      }
-
-      const data = await response.json();
-      console.log("GitHub OAuth success, user:", data.user);
-      
-      localStorage.setItem("authToken", data.token);
-      localStorage.setItem("authUser", JSON.stringify(data.user));
-      if (data.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
-      }
-      
-      toast.success("Signed in with GitHub! Let's set up your profile...");
-      setTimeout(() => {
-        window.location.href = "/select-age";
-      }, 1000);
-    } catch (error) {
-      console.error("GitHub login error:", error);
-      toast.error(error.message || "Failed to sign in with GitHub");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
@@ -162,16 +113,6 @@ const Login = () => {
                 text="signin_with"
               />
             </div>
-
-            {/* GitHub Login */}
-            <button
-              onClick={handleGitHubLogin}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-gray-900 hover:bg-gray-50 transition-all duration-200 font-medium text-gray-700 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Github className="w-5 h-5 text-gray-900" />
-              {isLoading ? "Signing in..." : "Continue with GitHub"}
-            </button>
           </div>
 
           {/* Divider */}

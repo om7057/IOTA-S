@@ -13,6 +13,8 @@ const ExpressionPage = () => {
   const [newPost, setNewPost] = useState({ title: '', content: '' });
   const [loading, setLoading] = useState(true);
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
   // Only show for teenagers
   if (userType !== 'teenager' && age < 13) {
     return (
@@ -30,10 +32,10 @@ const ExpressionPage = () => {
     const fetchData = async () => {
       try {
         const [topicsRes, postsRes] = await Promise.all([
-          fetch('http://localhost:3000/api/topics', {
+          fetch(`${API_URL}/topics`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
-          fetch('http://localhost:3000/api/topics/posts', {
+          fetch(`${API_URL}/topics/posts`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
         ]);
@@ -80,8 +82,13 @@ const ExpressionPage = () => {
       return;
     }
 
+    if (!selectedTopic) {
+      toast.error('Please select a topic first');
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:3000/api/topics/${selectedTopic}/posts`, {
+      const response = await fetch(`${API_URL}/topics/${selectedTopic}/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +119,7 @@ const ExpressionPage = () => {
   // Handle like
   const handleLike = async (postId) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/topics/posts/${postId}/like`, {
+      const response = await fetch(`${API_URL}/topics/posts/${postId}/like`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
