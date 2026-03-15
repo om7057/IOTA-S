@@ -1,0 +1,14 @@
+/**
+ * Sequelize Migrations
+ * 
+ * Current Status: Phase 1 (Skeleton)
+ * TODO: Generate migrations in Phase 4
+ * 
+ * Usage:
+ * - Create: npx sequelize-cli migration:generate --name migration-name
+ * - Run: npx sequelize-cli db:migrate
+ * - Undo: npx sequelize-cli db:migrate:undo
+ * - Undo All: npx sequelize-cli db:migrate:undo:all
+ */
+
+// Migrations will be generated here during Phase 4

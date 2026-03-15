@@ -1,0 +1,13 @@
+/**
+ * Seeders
+ * 
+ * Current Status: Phase 1 (Skeleton)
+ * TODO: Create seeders in Phase 4
+ * 
+ * Usage:
+ * - Create: npx sequelize-cli seed:generate --name seed-name
+ * - Run: npx sequelize-cli db:seed:all
+ * - Undo All: npx sequelize-cli db:seed:undo:all
+ */
+
+// Seeders will be created here during Phase 4
