@@ -23,6 +23,11 @@ import groupRoutes from './routes/groups.js';
 import discussionRoutes from './routes/discussions.js';
 import directMessageRoutes from './routes/direct-messages.js';
 import groupChatRoutes from './routes/group-chats.js';
+import achievementRoutes from './routes/achievements.js';
+import parentalRoutes from './routes/parental.js';
+import chatbotRoutes from './routes/chatbot.js';
+import forumsRoutes from './routes/forums.js';
+import socialRoutes from './routes/social.js';
 
 const app = express();
 
@@ -112,7 +117,16 @@ app.use('/api/discussions', discussionRoutes);
 app.use('/api/messages', directMessageRoutes);
 app.use('/api/chats', groupChatRoutes);
 
-logger.info('Routes registered: /api/auth (Phase 2), /api/users (Phase 3), /api/moods (Phase 4), /api/journals (Phase 4), /api/stories (Phase 4), /api/quizzes (Phase 5), /api/leaderboards (Phase 5), /api/progress (Phase 5), /api/admin (Admin), /api/groups (Phase 6), /api/discussions (Phase 6), /api/messages (Phase 6), /api/chats (Phase 6)');
+// ==================== Phase 8: Child Mode - Achievements & Parental Controls ====================
+app.use('/api/achievements', achievementRoutes);
+app.use('/api/parental', parentalRoutes);
+
+// ==================== Phase 8B: Teen Mode - AI Chatbot, Forums, Anonymous Posts, Social Feed ====================
+app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/forums', forumsRoutes);
+app.use('/api/social', socialRoutes);
+
+logger.info('Routes registered: /api/auth (Phase 2), /api/users (Phase 3), /api/moods (Phase 4), /api/journals (Phase 4), /api/stories (Phase 4), /api/quizzes (Phase 5), /api/leaderboards (Phase 5), /api/progress (Phase 5), /api/admin (Admin), /api/groups (Phase 6), /api/discussions (Phase 6), /api/messages (Phase 6), /api/chats (Phase 6), /api/achievements (Phase 8), /api/parental (Phase 8), /api/chatbot (Phase 8B), /api/forums (Phase 8B), /api/social (Phase 8B)');
 
 // ==================== Error Handling ====================
 

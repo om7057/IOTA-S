@@ -38,6 +38,14 @@ export { Conversation } from './Conversation.js';
 export { DirectMessage } from './DirectMessage.js';
 export { GroupChat } from './GroupChat.js';
 export { Like } from './Like.js';
+export { Badge } from './Badge.js';
+export { UserAchievement } from './UserAchievement.js';
+export { ParentalAccount } from './ParentalAccount.js';
+export { ChatMessage } from './ChatMessage.js';
+export { Post } from './Post.js';
+export { Thread } from './Thread.js';
+export { ThreadReply } from './ThreadReply.js';
+export { Comment } from './Comment.js';
 
 // Import models to ensure they're registered
 import User from './User.js';
@@ -61,6 +69,14 @@ import Conversation from './Conversation.js';
 import DirectMessage from './DirectMessage.js';
 import GroupChat from './GroupChat.js';
 import Like from './Like.js';
+import Badge from './Badge.js';
+import UserAchievement from './UserAchievement.js';
+import ParentalAccount from './ParentalAccount.js';
+import ChatMessage from './ChatMessage.js';
+import Post from './Post.js';
+import Thread from './Thread.js';
+import ThreadReply from './ThreadReply.js';
+import Comment from './Comment.js';
 
 // Establish relationships
 // User relationships
@@ -159,6 +175,57 @@ GroupChat.belongsTo(User, { as: 'sender', foreignKey: 'senderId' });
 // Like relationships (Phase 6)
 User.hasMany(Like, { as: 'likes', foreignKey: 'userId' });
 Like.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+// Achievement relationships (Phase 8 - Child Mode)
+Badge.hasMany(UserAchievement, { as: 'userAchievements', foreignKey: 'badgeId' });
+UserAchievement.belongsTo(Badge, { as: 'badge', foreignKey: 'badgeId' });
+
+User.hasMany(UserAchievement, { as: 'achievements', foreignKey: 'userId' });
+UserAchievement.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+// Parental Account relationships (Phase 8 - Child Mode)
+User.hasMany(ParentalAccount, { as: 'childAccounts', foreignKey: 'childUserId' });
+User.hasMany(ParentalAccount, { as: 'parentAccounts', foreignKey: 'parentUserId' });
+ParentalAccount.belongsTo(User, { as: 'child', foreignKey: 'childUserId' });
+ParentalAccount.belongsTo(User, { as: 'parent', foreignKey: 'parentUserId' });
+
+// Chat relationships (Phase 8B - Teen Mode)
+User.hasMany(ChatMessage, { as: 'chatMessages', foreignKey: 'userId' });
+ChatMessage.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+// Post relationships (Phase 8B - Teen Mode)
+User.hasMany(Post, { as: 'posts', foreignKey: 'userId' });
+Post.belongsTo(User, { as: 'creator', foreignKey: 'userId' });
+
+Group.hasMany(Post, { as: 'posts', foreignKey: 'groupId' });
+Post.belongsTo(Group, { as: 'group', foreignKey: 'groupId' });
+
+// Thread relationships (Phase 8B - Teen Mode)
+Group.hasMany(Thread, { as: 'threads', foreignKey: 'groupId' });
+Thread.belongsTo(Group, { as: 'group', foreignKey: 'groupId' });
+
+User.hasMany(Thread, { as: 'threads', foreignKey: 'creatorId' });
+Thread.belongsTo(User, { as: 'creator', foreignKey: 'creatorId' });
+
+Thread.hasMany(ThreadReply, { as: 'replies', foreignKey: 'threadId' });
+ThreadReply.belongsTo(Thread, { as: 'thread', foreignKey: 'threadId' });
+
+User.hasMany(ThreadReply, { as: 'threadReplies', foreignKey: 'userId' });
+ThreadReply.belongsTo(User, { as: 'creator', foreignKey: 'userId' });
+
+ThreadReply.hasMany(ThreadReply, { as: 'nestedReplies', foreignKey: 'parentReplyId' });
+ThreadReply.belongsTo(ThreadReply, { as: 'parentReply', foreignKey: 'parentReplyId' });
+
+// Comment relationships (Phase 8B - Teen Mode)
+Post.hasMany(Comment, { as: 'comments', foreignKey: 'postId' });
+Comment.belongsTo(Post, { as: 'post', foreignKey: 'postId' });
+
+User.hasMany(Comment, { as: 'comments', foreignKey: 'userId' });
+Comment.belongsTo(User, { as: 'creator', foreignKey: 'userId' });
+
+Comment.hasMany(Comment, { as: 'replies', foreignKey: 'parentCommentId' });
+Comment.belongsTo(Comment, { as: 'parentComment', foreignKey: 'parentCommentId' });
+
 const db = {
   User,
   RefreshToken,
@@ -172,14 +239,24 @@ const db = {
   QuizQuestion,
   QuizProgress,
   UserStoryProgress,
-  Leaderboard,  Group,
+  Leaderboard,
+  Group,
   GroupMember,
   Discussion,
   DiscussionReply,
   Conversation,
   DirectMessage,
   GroupChat,
-  Like,};
+  Like,
+  Badge,
+  UserAchievement,
+  ParentalAccount,
+  ChatMessage,
+  Post,
+  Thread,
+  ThreadReply,
+  Comment,
+};
 
 export const connectDB = async () => {
   try {
