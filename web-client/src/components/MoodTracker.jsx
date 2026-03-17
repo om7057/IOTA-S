@@ -6,6 +6,7 @@ import FacialEmotionDetector from './FacialEmotionDetector';
 
 const MoodTracker = () => {
   const { user, token } = useAuth();
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
   const [moods, setMoods] = useState([]);
   const [selectedMood, setSelectedMood] = useState(null);
   const [intensity, setIntensity] = useState(3);
@@ -39,7 +40,7 @@ const MoodTracker = () => {
 
   const fetchTodayMood = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/moods/user/${user.id}/today`);
+      const response = await fetch(`${apiUrl}/moods/user/${user.id}/today`);
       if (response.ok) {
         const data = await response.json();
         setTodayMood(data);
@@ -62,7 +63,7 @@ const MoodTracker = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/moods', {
+      const response = await fetch(`${apiUrl}/moods`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

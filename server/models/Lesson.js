@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Lesson Model
@@ -18,7 +18,7 @@ export const Lesson = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Units',
+        model: 'units',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -99,7 +99,7 @@ export const Lesson = sequelize.define(
     },
   },
   {
-    tableName: 'Lessons',
+    tableName: 'lessons',
     timestamps: true,
     indexes: [
       { fields: ['unitId', 'sequence'] },

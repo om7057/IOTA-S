@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * GroupChat Model
@@ -17,7 +17,7 @@ export const GroupChat = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Groups',
+        model: 'groups',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -27,7 +27,7 @@ export const GroupChat = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'SET NULL',
@@ -74,7 +74,7 @@ export const GroupChat = sequelize.define(
     },
   },
   {
-    tableName: 'GroupChats',
+    tableName: 'group_chats',
     timestamps: true,
     indexes: [
       { fields: ['groupId', 'createdAt'] },

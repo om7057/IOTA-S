@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 const Thread = sequelize.define('Thread', {
   id: {
@@ -11,7 +11,7 @@ const Thread = sequelize.define('Thread', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Groups',
+      model: 'groups',
       key: 'id',
     },
   },
@@ -19,7 +19,7 @@ const Thread = sequelize.define('Thread', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id',
     },
   },
@@ -89,6 +89,10 @@ const Thread = sequelize.define('Thread', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+},
+{
+  tableName: 'threads',
+  timestamps: true,
 });
 
 export default Thread;

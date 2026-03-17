@@ -341,6 +341,84 @@ export const getUserProgress = async (req, res, next) => {
   }
 };
 
+/**
+ * PUT /api/users/:userId/age
+ * Update user age and set userType based on age
+ * User can only update their own age
+ */
+export const updateUserAge = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const { age } = req.body;
+
+    // Validate UUID
+    if (!validators.isValidUUID(userId)) {
+      return res.status(400).json({
+        error: 'Invalid user ID format',
+      });
+    }
+
+    // Verify ownership
+    if (req.user.id !== userId) {
+      logger.warn('Unauthorized age update attempt', {
+        requesterId: req.user.id,
+        targetUserId: userId,
+      });
+      return res.status(403).json({
+        error: 'You can only update your own age',
+      });
+    }
+
+    // Validate age
+    if (age === undefined || age === null) {
+      return res.status(400).json({
+        error: 'Age is required',
+      });
+    }
+
+    if (!validators.isValidAge(age)) {
+      return res.status(400).json({
+        error: 'Age must be between 5 and 19',
+      });
+    }
+
+    // Find user
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+      });
+    }
+
+    // Update age and userType
+    user.age = parseInt(age);
+    user.userType = age >= 13 ? 'teen' : 'child';
+
+    // Save changes
+    await user.save();
+
+    logger.info('User age updated', { userId, age, userType: user.userType });
+
+    return res.status(200).json({
+      message: 'Age updated successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        displayName: user.displayName,
+        age: user.age,
+        gender: user.gender,
+        userType: user.userType,
+        avatarUrl: user.avatarUrl,
+      },
+    });
+  } catch (error) {
+    logger.error('Update user age error', { error: error.message });
+    next(error);
+  }
+};
+
 export default {
   listUsers,
   getCurrentUser,
@@ -348,4 +426,5 @@ export default {
   updateUser,
   deleteUser,
   getUserProgress,
+  updateUserAge,
 };

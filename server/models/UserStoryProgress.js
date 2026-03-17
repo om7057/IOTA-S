@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * UserStoryProgress Model
@@ -17,7 +17,7 @@ export const UserStoryProgress = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -27,7 +27,7 @@ export const UserStoryProgress = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Stories',
+        model: 'stories',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -37,7 +37,7 @@ export const UserStoryProgress = sequelize.define(
       type: DataTypes.UUID,
       allowNull: true,
       references: {
-        model: 'Units',
+        model: 'units',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -46,7 +46,7 @@ export const UserStoryProgress = sequelize.define(
       type: DataTypes.UUID,
       allowNull: true,
       references: {
-        model: 'Lessons',
+        model: 'lessons',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -55,7 +55,7 @@ export const UserStoryProgress = sequelize.define(
       type: DataTypes.UUID,
       allowNull: true,
       references: {
-        model: 'Challenges',
+        model: 'challenges',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -100,7 +100,7 @@ export const UserStoryProgress = sequelize.define(
     },
   },
   {
-    tableName: 'UserStoryProgresses',
+    tableName: 'user_story_progresses',
     timestamps: true,
     indexes: [
       { fields: ['userId', 'storyId'] },

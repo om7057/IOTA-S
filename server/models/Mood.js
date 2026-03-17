@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Mood Model
@@ -18,7 +18,7 @@ export const Mood = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -82,7 +82,7 @@ export const Mood = sequelize.define(
     },
   },
   {
-    tableName: 'Moods',
+    tableName: 'moods',
     timestamps: true,
     indexes: [
       { fields: ['userId', 'loggedAt'] },

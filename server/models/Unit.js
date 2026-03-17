@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Unit Model
@@ -18,7 +18,7 @@ export const Unit = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Stories',
+        model: 'stories',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -74,7 +74,7 @@ export const Unit = sequelize.define(
     },
   },
   {
-    tableName: 'Units',
+    tableName: 'units',
     timestamps: true,
     indexes: [
       { fields: ['storyId', 'sequence'] },

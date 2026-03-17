@@ -65,7 +65,8 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5000/api/auth/google/web');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${apiUrl}/auth/google/web`);
       const data = await response.json();
 
       if (data.authUrl) {

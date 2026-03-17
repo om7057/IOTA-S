@@ -15,7 +15,8 @@ const AgeSelection = () => {
     
     try {
       // Update age in backend
-      const response = await fetch(`http://localhost:5000/api/users/${user.id}/age`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${apiUrl}/users/${user.id}/age`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

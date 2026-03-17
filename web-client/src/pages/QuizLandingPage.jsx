@@ -10,13 +10,14 @@ const QuizLandingPage = () => {
     const fetchStories = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:5000/api/stories");
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const res = await fetch(`${apiUrl}/stories`);
         const allStories = await res.json();
 
         const filtered = [];
 
         for (const story of allStories) {
-          const quizRes = await fetch(`http://localhost:5000/api/quiz/story/${story._id}`);
+          const quizRes = await fetch(`${apiUrl}/quiz/story/${story._id}`);
           const quizData = await quizRes.json();
           if (Array.isArray(quizData) && quizData.length > 0) {
             filtered.push(story);

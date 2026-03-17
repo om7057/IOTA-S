@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 const Post = sequelize.define('Post', {
   id: {
@@ -11,7 +11,7 @@ const Post = sequelize.define('Post', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id',
     },
   },
@@ -19,7 +19,7 @@ const Post = sequelize.define('Post', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Groups',
+      model: 'groups',
       key: 'id',
     },
   },
@@ -98,6 +98,10 @@ const Post = sequelize.define('Post', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+},
+{
+  tableName: 'posts',
+  timestamps: true,
 });
 
 export default Post;

@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 export const ParentalAccount = sequelize.define('ParentalAccount', {
   id: {

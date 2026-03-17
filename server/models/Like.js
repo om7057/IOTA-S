@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Like Model
@@ -17,7 +17,7 @@ export const Like = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -41,7 +41,7 @@ export const Like = sequelize.define(
     },
   },
   {
-    tableName: 'Likes',
+    tableName: 'likes',
     timestamps: false,
     indexes: [
       { fields: ['userId', 'targetType', 'targetId'], unique: true },

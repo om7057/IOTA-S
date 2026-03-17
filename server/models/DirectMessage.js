@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * DirectMessage Model
@@ -17,7 +17,7 @@ export const DirectMessage = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Conversations',
+        model: 'conversations',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -27,7 +27,7 @@ export const DirectMessage = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -73,7 +73,7 @@ export const DirectMessage = sequelize.define(
     },
   },
   {
-    tableName: 'DirectMessages',
+    tableName: 'direct_messages',
     timestamps: true,
     indexes: [
       { fields: ['conversationId', 'createdAt'] },

@@ -1,53 +1,12 @@
-import { Sequelize, DataTypes } from 'sequelize';
-import dbConfig from '../config/database.js';
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/sequelize.js';
 
-// Create Sequelize instance
-export const sequelize = new Sequelize(
-  dbConfig.database,
-  dbConfig.username,
-  dbConfig.password,
-  {
-    host: dbConfig.host,
-    port: dbConfig.port,
-    dialect: dbConfig.dialect,
-    pool: dbConfig.pool,
-    logging: dbConfig.logging,
-    define: dbConfig.define,
-  }
-);
+// sequelize instance is imported from config/sequelize.js
+// to avoid circular dependencies
+export { sequelize };
 
-// Import all models
-export { User } from './User.js';
-export { RefreshToken } from './RefreshToken.js';
-export { Mood } from './Mood.js';
-export { Journal } from './Journal.js';
-export { Story } from './Story.js';
-export { Unit } from './Unit.js';
-export { Lesson } from './Lesson.js';
-export { Challenge } from './Challenge.js';
-export { Quiz } from './Quiz.js';
-export { QuizQuestion } from './QuizQuestion.js';
-export { QuizProgress } from './QuizProgress.js';
-export { UserStoryProgress } from './UserStoryProgress.js';
-export { Leaderboard } from './Leaderboard.js';
-export { Group } from './Group.js';
-export { GroupMember } from './GroupMember.js';
-export { Discussion } from './Discussion.js';
-export { DiscussionReply } from './DiscussionReply.js';
-export { Conversation } from './Conversation.js';
-export { DirectMessage } from './DirectMessage.js';
-export { GroupChat } from './GroupChat.js';
-export { Like } from './Like.js';
-export { Badge } from './Badge.js';
-export { UserAchievement } from './UserAchievement.js';
-export { ParentalAccount } from './ParentalAccount.js';
-export { ChatMessage } from './ChatMessage.js';
-export { Post } from './Post.js';
-export { Thread } from './Thread.js';
-export { ThreadReply } from './ThreadReply.js';
-export { Comment } from './Comment.js';
-
-// Import models to ensure they're registered
+// Import ALL models BEFORE setting up relationships
+// This ensures sequelize is already defined when models load
 import User from './User.js';
 import RefreshToken from './RefreshToken.js';
 import Mood from './Mood.js';
@@ -77,6 +36,40 @@ import Post from './Post.js';
 import Thread from './Thread.js';
 import ThreadReply from './ThreadReply.js';
 import Comment from './Comment.js';
+import { seedStories } from '../seeds/stories.js';
+import { seedQuizzes } from '../seeds/quizzes.js';
+import { seedGroups } from '../seeds/groups.js';
+
+// Export all models AFTER they're imported
+export { User };
+export { RefreshToken };
+export { Mood };
+export { Journal };
+export { Story };
+export { Unit };
+export { Lesson };
+export { Challenge };
+export { Quiz };
+export { QuizQuestion };
+export { QuizProgress };
+export { UserStoryProgress };
+export { Leaderboard };
+export { Group };
+export { GroupMember };
+export { Discussion };
+export { DiscussionReply };
+export { Conversation };
+export { DirectMessage };
+export { GroupChat };
+export { Like };
+export { Badge };
+export { UserAchievement };
+export { ParentalAccount };
+export { ChatMessage };
+export { Post };
+export { Thread };
+export { ThreadReply };
+export { Comment };
 
 // Establish relationships
 // User relationships
@@ -267,6 +260,16 @@ export const connectDB = async () => {
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: false });
       console.log('✅ Database models synchronized');
+      
+      // Seed data if in development
+      try {
+        await seedStories();
+        await seedQuizzes();
+        await seedGroups();
+      } catch (seedError) {
+        console.warn('⚠️ Seeding warning:', seedError.message);
+        // Don't fail server startup if seeding fails
+      }
     }
 
     return sequelize;

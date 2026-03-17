@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * User Model - Unified Schema
@@ -120,7 +120,6 @@ export const User = sequelize.define(
     oauthProvider: {
       type: DataTypes.ENUM('google', 'local'),
       allowNull: true,
-      comment: 'Auth provider: google or local email/password',
     },
 
     googleId: {

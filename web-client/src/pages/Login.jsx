@@ -40,10 +40,11 @@ const Login = () => {
       
       console.log("Sending Google OAuth data to backend:", oauthData);
       
-      const response = await fetch("http://localhost:5000/api/auth/oauth/google", {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${apiUrl}/auth/google/callback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(oauthData)
+        body: JSON.stringify({ ...oauthData, platform: 'web' })
       });
 
       console.log("Backend OAuth response status:", response.status);

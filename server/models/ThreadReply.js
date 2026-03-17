@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 const ThreadReply = sequelize.define('ThreadReply', {
   id: {
@@ -11,7 +11,7 @@ const ThreadReply = sequelize.define('ThreadReply', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Threads',
+      model: 'threads',
       key: 'id',
     },
   },
@@ -19,7 +19,7 @@ const ThreadReply = sequelize.define('ThreadReply', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id',
     },
   },
@@ -28,7 +28,7 @@ const ThreadReply = sequelize.define('ThreadReply', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'ThreadReplies',
+      model: 'thread_replies',
       key: 'id',
     },
   },
@@ -90,6 +90,10 @@ const ThreadReply = sequelize.define('ThreadReply', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+},
+{
+  tableName: 'thread_replies',
+  timestamps: true,
 });
 
 export default ThreadReply;

@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * QuizProgress Model
@@ -17,7 +17,7 @@ export const QuizProgress = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -27,7 +27,7 @@ export const QuizProgress = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Quizzes',
+        model: 'quizzes',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -90,7 +90,7 @@ export const QuizProgress = sequelize.define(
     },
   },
   {
-    tableName: 'QuizProgresses',
+    tableName: 'quiz_progresses',
     timestamps: true,
     indexes: [
       { fields: ['userId', 'quizId'] },

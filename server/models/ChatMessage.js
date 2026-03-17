@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 const ChatMessage = sequelize.define('ChatMessage', {
   id: {
@@ -11,7 +11,7 @@ const ChatMessage = sequelize.define('ChatMessage', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id',
     },
   },

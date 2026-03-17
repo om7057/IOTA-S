@@ -60,4 +60,14 @@ router.delete('/:userId', verifyToken, userController.deleteUser);
  */
 router.get('/:userId/progress', userController.getUserProgress);
 
+/**
+ * PUT /api/users/:userId/age
+ * Update user age (protected)
+ * Params: userId - UUID of user
+ * Headers: Authorization: Bearer {accessToken}
+ * Body: { age: number }
+ * Returns: updated user profile with age and userType
+ */
+router.put('/:userId/age', verifyToken, userController.updateUserAge);
+
 export default router;

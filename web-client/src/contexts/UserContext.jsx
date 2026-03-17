@@ -21,7 +21,8 @@ export function UserProvider({ children }) {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${user.id}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${apiUrl}/users/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
@@ -41,7 +42,8 @@ export function UserProvider({ children }) {
 
   const setUserAge = async (userAge) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${user.id}/age`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${apiUrl}/users/${user.id}/age`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 const Comment = sequelize.define('Comment', {
   id: {
@@ -11,7 +11,7 @@ const Comment = sequelize.define('Comment', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Posts',
+      model: 'posts',
       key: 'id',
     },
   },
@@ -19,7 +19,7 @@ const Comment = sequelize.define('Comment', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id',
     },
   },
@@ -28,7 +28,7 @@ const Comment = sequelize.define('Comment', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'Comments',
+      model: 'comments',
       key: 'id',
     },
   },
@@ -76,6 +76,10 @@ const Comment = sequelize.define('Comment', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+},
+{
+  tableName: 'comments',
+  timestamps: true,
 });
 
 export default Comment;
