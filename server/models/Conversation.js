@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Conversation Model
@@ -17,7 +17,7 @@ export const Conversation = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -27,7 +27,7 @@ export const Conversation = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -59,7 +59,7 @@ export const Conversation = sequelize.define(
     },
   },
   {
-    tableName: 'Conversations',
+    tableName: 'conversations',
     timestamps: true,
     indexes: [
       { fields: ['user1Id', 'user2Id'], unique: true },

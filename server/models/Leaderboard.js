@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Leaderboard Model
@@ -17,7 +17,7 @@ export const Leaderboard = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -88,7 +88,7 @@ export const Leaderboard = sequelize.define(
     },
   },
   {
-    tableName: 'Leaderboards',
+    tableName: 'leaderboards',
     timestamps: true,
     indexes: [
       { fields: ['period', 'rank'] },

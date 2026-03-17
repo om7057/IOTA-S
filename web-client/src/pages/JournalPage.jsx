@@ -31,7 +31,8 @@ const JournalPage = () => {
 
   const fetchJournals = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/journals/user/${user.id}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${apiUrl}/journals/user/${user.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
@@ -69,8 +70,8 @@ const JournalPage = () => {
     setLoading(true);
     try {
       const url = editingId 
-        ? `http://localhost:5000/api/journals/${editingId}`
-        : 'http://localhost:5000/api/journals';
+        ? `${apiUrl}/journals/${editingId}`
+        : `${apiUrl}/journals`;
       
       const method = editingId ? 'PUT' : 'POST';
       
@@ -107,7 +108,7 @@ const JournalPage = () => {
   const handleDelete = async (journalId) => {
     if (window.confirm('Are you sure you want to delete this entry?')) {
       try {
-        const response = await fetch(`http://localhost:5000/api/journals/${journalId}`, {
+        const response = await fetch(`${apiUrl}/journals/${journalId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });

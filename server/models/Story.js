@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Story Model
@@ -123,7 +123,7 @@ export const Story = sequelize.define(
     },
   },
   {
-    tableName: 'Stories',
+    tableName: 'stories',
     timestamps: true,
     indexes: [
       { fields: ['category'] },

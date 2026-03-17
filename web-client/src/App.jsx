@@ -27,6 +27,11 @@ import TeenForum from "./pages/TeenForum";
 import TeenJournal from "./pages/TeenJournal";
 import TeenCommunities from "./pages/TeenCommunities";
 import TeenMessages from "./pages/TeenMessages";
+import Chatbot from "./components/Chatbot";
+import Forums from "./components/Forums";
+import SocialFeed from "./components/SocialFeed";
+import Achievements from "./components/Achievements";
+import ParentalControls from "./components/ParentalControls";
 import { Toaster } from "react-hot-toast";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 
@@ -101,6 +106,14 @@ const AppContent = () => {
         <Route path="/lesson/:lessonId" element={<StoryWithChallenges />} />
         <Route path="/loading" element={<LoadingSpinner />} />
 
+        {/* Child Mode Routes (age < 13) - Phase 8A */}
+        {age && age < 13 && (
+          <>
+            <Route path="/achievements" element={<Achievements />} />
+            <Route path="/parental-controls" element={<ParentalControls />} />
+          </>
+        )}
+
         {/* Teen Section Routes */}
         {age && age >= 13 && (
           <>
@@ -108,6 +121,9 @@ const AppContent = () => {
             <Route path="/teen/journal" element={<TeenJournal />} />
             <Route path="/teen/community" element={<TeenCommunities />} />
             <Route path="/teen/messages" element={<TeenMessages />} />
+            <Route path="/teen/chatbot" element={<Chatbot />} />
+            <Route path="/teen/forums" element={<Forums />} />
+            <Route path="/teen/social" element={<SocialFeed />} />
           </>
         )}
 

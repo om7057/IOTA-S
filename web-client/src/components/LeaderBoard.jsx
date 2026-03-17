@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Trophy, Medal, Award, Info, Users, RefreshCw } from "lucide-react";
 
 const Leaderboard = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
   const [users, setUsers] = useState([]);
   const [scores, setScores] = useState([]);
   const [stories, setStories] = useState([]);
@@ -16,9 +17,9 @@ const Leaderboard = () => {
       try {
         console.log("📢 Fetching initial leaderboard data...");
         const responses = await Promise.all([
-          fetch("http://localhost:5000/api/users"),
-          fetch("http://localhost:5000/api/stories"),
-          fetch("http://localhost:5000/api/leaderboard"),
+          fetch(`${apiUrl}/users`),
+          fetch(`${apiUrl}/stories`),
+          fetch(`${apiUrl}/leaderboard`),
         ]);
 
         if (responses.some((res) => !res.ok)) {

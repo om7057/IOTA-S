@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Journal Model
@@ -18,7 +18,7 @@ export const Journal = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -95,7 +95,7 @@ export const Journal = sequelize.define(
     },
   },
   {
-    tableName: 'Journals',
+    tableName: 'journals',
     timestamps: true,
     indexes: [
       { fields: ['userId', 'entryDate'] },

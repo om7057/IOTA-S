@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 import { User } from './User.js';
 
 /**
@@ -89,18 +89,5 @@ export const RefreshToken = sequelize.define(
     ],
   }
 );
-
-// Association with User
-RefreshToken.belongsTo(User, {
-  foreignKey: 'userId',
-  as: 'user',
-  onDelete: 'CASCADE',
-});
-
-User.hasMany(RefreshToken, {
-  foreignKey: 'userId',
-  as: 'refreshTokens',
-  onDelete: 'CASCADE',
-});
 
 export default RefreshToken;

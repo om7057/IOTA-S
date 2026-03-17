@@ -369,73 +369,92 @@ export const getGoogleAuthUrlMobile = async (req, res, next) => {
  */
 export const handleGoogleCallback = async (req, res, next) => {
   try {
-    const { code, platform } = req.body;
+    const { code, platform, googleId, email, firstName, lastName, imageUrl } = req.body;
 
-    if (!code) {
+    // Support two flows:
+    // 1. Authorization code flow (mobile/web with code)
+    // 2. JWT credential flow (web with pre-decoded JWT from One-Tap)
+    
+    let userGoogleId, userEmail, userFirstName, userLastName, userPicture;
+
+    if (googleId && email) {
+      // JWT credential flow - data already decoded by frontend
+      userGoogleId = googleId;
+      userEmail = email;
+      userFirstName = firstName || '';
+      userLastName = lastName || '';
+      userPicture = imageUrl || null;
+      
+      logger.debug('Processing Google OAuth via JWT credential flow', { userGoogleId, userEmail });
+    } else if (code && platform) {
+      // Authorization code flow - exchange code for tokens
+      if (!['web', 'mobile'].includes(platform)) {
+        return res.status(400).json({
+          error: 'Platform must be "web" or "mobile"',
+        });
+      }
+
+      if (!environment.GOOGLE.clientId || !environment.GOOGLE.clientSecret) {
+        return res.status(500).json({
+          error: 'Google OAuth not configured',
+        });
+      }
+
+      const redirectUri =
+        platform === 'web' ? environment.GOOGLE.callbackUrlWeb : environment.GOOGLE.callbackUrlMobile;
+
+      const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
+        client_id: environment.GOOGLE.clientId,
+        client_secret: environment.GOOGLE.clientSecret,
+        code,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      });
+
+      // Decode ID token to get user info
+      const idToken = tokenResponse.data.id_token;
+      const decoded = jwt.decode(idToken);
+
+      if (!decoded) {
+        return res.status(400).json({
+          error: 'Invalid ID token',
+        });
+      }
+
+      const { sub: decodedGoogleId, email: decodedEmail, name, picture } = decoded;
+      userGoogleId = decodedGoogleId;
+      userEmail = decodedEmail;
+      userFirstName = name ? name.split(' ')[0] : '';
+      userLastName = name ? name.split(' ').slice(1).join(' ') : '';
+      userPicture = picture || null;
+      
+      logger.debug('Processing Google OAuth via authorization code flow', { userGoogleId, userEmail });
+    } else {
       return res.status(400).json({
-        error: 'Authorization code required',
+        error: 'Either authorization code or Google credentials required',
       });
     }
-
-    if (!['web', 'mobile'].includes(platform)) {
-      return res.status(400).json({
-        error: 'Platform must be "web" or "mobile"',
-      });
-    }
-
-    if (!environment.GOOGLE.clientId || !environment.GOOGLE.clientSecret) {
-      return res.status(500).json({
-        error: 'Google OAuth not configured',
-      });
-    }
-
-    // Exchange code for tokens
-    const redirectUri =
-      platform === 'web' ? environment.GOOGLE.callbackUrlWeb : environment.GOOGLE.callbackUrlMobile;
-
-    const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
-      client_id: environment.GOOGLE.clientId,
-      client_secret: environment.GOOGLE.clientSecret,
-      code,
-      redirect_uri: redirectUri,
-      grant_type: 'authorization_code',
-    });
-
-    // Decode ID token to get user info
-    const idToken = tokenResponse.data.id_token;
-    const decoded = jwt.decode(idToken);
-
-    if (!decoded) {
-      return res.status(400).json({
-        error: 'Invalid ID token',
-      });
-    }
-
-    const { sub: googleId, email, name, picture } = decoded;
 
     // Find or create user
     let user = await User.findOne({
-      where: { googleId },
+      where: { googleId: userGoogleId },
     });
 
     if (!user) {
       // New user - create account
-      const [firstName, ...lastNameParts] = name.split(' ');
-      const lastName = lastNameParts.join(' ');
-
       user = await User.create({
-        email,
-        firstName,
-        lastName,
-        googleId,
-        avatarUrl: picture,
+        email: userEmail,
+        firstName: userFirstName,
+        lastName: userLastName,
+        googleId: userGoogleId,
+        avatarUrl: userPicture,
         oauthProvider: 'google',
       });
 
-      logger.info('New user created via Google OAuth', { userId: user.id, email, googleId });
-    } else if (user.email !== email) {
+      logger.info('New user created via Google OAuth', { userId: user.id, email: userEmail, googleId: userGoogleId });
+    } else if (user.email !== userEmail) {
       // Update email if changed
-      user.email = email;
+      user.email = userEmail;
       await user.save();
     }
 
@@ -452,7 +471,7 @@ export const handleGoogleCallback = async (req, res, next) => {
       userAgent: req.get('user-agent'),
     });
 
-    logger.info('User authenticated via Google OAuth', { userId: user.id, email, platform });
+    logger.info('User authenticated via Google OAuth', { userId: user.id, email: userEmail });
 
     return res.status(200).json({
       message: 'Google OAuth successful',
@@ -466,6 +485,7 @@ export const handleGoogleCallback = async (req, res, next) => {
         userType: user.userType,
         avatarUrl: user.avatarUrl,
       },
+      token: accessToken,
       tokens: {
         accessToken,
         refreshToken,

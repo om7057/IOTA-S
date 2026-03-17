@@ -26,7 +26,8 @@ const ProfilePage = () => {
 
       try {
         console.log("Fetching progress for user:", user.id);
-        const response = await fetch(`http://localhost:5000/api/quiz-progress/user/${user.id}`, {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const response = await fetch(`${apiUrl}/quiz-progress/user/${user.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

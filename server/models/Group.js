@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Group Model
@@ -31,7 +31,7 @@ export const Group = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -86,7 +86,7 @@ export const Group = sequelize.define(
     },
   },
   {
-    tableName: 'Groups',
+    tableName: 'groups',
     timestamps: true,
     indexes: [
       { fields: ['creatorId'] },

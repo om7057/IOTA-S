@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Discussion Model
@@ -17,7 +17,7 @@ export const Discussion = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Groups',
+        model: 'groups',
         key: 'id',
       },
       onDelete: 'CASCADE',
@@ -27,7 +27,7 @@ export const Discussion = sequelize.define(
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'SET NULL',
@@ -97,7 +97,7 @@ export const Discussion = sequelize.define(
     },
   },
   {
-    tableName: 'Discussions',
+    tableName: 'discussions',
     timestamps: true,
     indexes: [
       { fields: ['groupId', 'isPinned'] },

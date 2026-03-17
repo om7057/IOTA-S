@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import { sequelize } from './index.js';
+import { sequelize } from '../config/sequelize.js';
 
 /**
  * Quiz Model
@@ -98,7 +98,7 @@ export const Quiz = sequelize.define(
     },
   },
   {
-    tableName: 'Quizzes',
+    tableName: 'quizzes',
     timestamps: true,
     indexes: [
       { fields: ['category'] },

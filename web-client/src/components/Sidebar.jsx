@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Home, BookOpen, BarChart3, Newspaper, Lightbulb, Shield, X, Smile, BookMarked, Zap, Users, HelpCircle, Heart } from "lucide-react";
+import { Home, BookOpen, BarChart3, Newspaper, Lightbulb, Shield, X, Smile, BookMarked, Zap, Users, HelpCircle, Heart, MessageCircle, MessageSquare, Globe, Trophy, Settings } from "lucide-react";
 
 const Sidebar = ({ onClose, isMobile }) => {
   const navigate = useNavigate();
@@ -17,6 +17,10 @@ const Sidebar = ({ onClose, isMobile }) => {
     { name: "Quizzes", path: "/quizzes", icon: <Lightbulb className="w-5 h-5" /> },
     { name: "My Mood", path: "/mood", icon: <Smile className="w-5 h-5" /> },
     { name: "Leaderboard", path: "/leaderboard", icon: <BarChart3 className="w-5 h-5" /> },
+    { separator: true },
+    { name: "Child Mode", section: true },
+    { name: "Achievements", path: "/achievements", icon: <Trophy className="w-5 h-5" /> },
+    { name: "Parental Controls", path: "/parental-controls", icon: <Settings className="w-5 h-5" /> },
   ];
 
   // Teenager navigation (age >= 13)
@@ -27,6 +31,11 @@ const Sidebar = ({ onClose, isMobile }) => {
     { name: "Groups", path: "/groups", icon: <Users className="w-5 h-5" /> },
     { name: "Questions", path: "/queries", icon: <HelpCircle className="w-5 h-5" /> },
     { name: "Resources", path: "/resources", icon: <Newspaper className="w-5 h-5" /> },
+    { separator: true },
+    { name: "Teen Mode", section: true },
+    { name: "AI Friend", path: "/teen/chatbot", icon: <MessageCircle className="w-5 h-5" /> },
+    { name: "Forums", path: "/teen/forums", icon: <MessageSquare className="w-5 h-5" /> },
+    { name: "Social Feed", path: "/teen/social", icon: <Globe className="w-5 h-5" /> },
   ];
 
   const sidebarItems = userType === 'child' ? childrenItems : teenagerItems;
@@ -80,7 +89,19 @@ const Sidebar = ({ onClose, isMobile }) => {
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         <p className="px-3 mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Menu</p>
-        {sidebarItems.map((item) => {
+        {sidebarItems.map((item, index) => {
+          if (item.separator) {
+            return <div key={`sep-${index}`} className="my-3 border-t border-gray-200"></div>;
+          }
+          
+          if (item.section) {
+            return (
+              <p key={`section-${index}`} className="px-3 mt-4 mb-2 text-xs font-semibold text-sky-600 uppercase tracking-wider">
+                {item.name}
+              </p>
+            );
+          }
+          
           const isActive = location.pathname === item.path;
           return (
             <button

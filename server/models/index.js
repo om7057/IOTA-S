@@ -1,45 +1,12 @@
-import { Sequelize, DataTypes } from 'sequelize';
-import dbConfig from '../config/database.js';
+import { DataTypes } from 'sequelize';
+import { sequelize } from '../config/sequelize.js';
 
-// Create Sequelize instance
-export const sequelize = new Sequelize(
-  dbConfig.database,
-  dbConfig.username,
-  dbConfig.password,
-  {
-    host: dbConfig.host,
-    port: dbConfig.port,
-    dialect: dbConfig.dialect,
-    pool: dbConfig.pool,
-    logging: dbConfig.logging,
-    define: dbConfig.define,
-  }
-);
+// sequelize instance is imported from config/sequelize.js
+// to avoid circular dependencies
+export { sequelize };
 
-// Import all models
-export { User } from './User.js';
-export { RefreshToken } from './RefreshToken.js';
-export { Mood } from './Mood.js';
-export { Journal } from './Journal.js';
-export { Story } from './Story.js';
-export { Unit } from './Unit.js';
-export { Lesson } from './Lesson.js';
-export { Challenge } from './Challenge.js';
-export { Quiz } from './Quiz.js';
-export { QuizQuestion } from './QuizQuestion.js';
-export { QuizProgress } from './QuizProgress.js';
-export { UserStoryProgress } from './UserStoryProgress.js';
-export { Leaderboard } from './Leaderboard.js';
-export { Group } from './Group.js';
-export { GroupMember } from './GroupMember.js';
-export { Discussion } from './Discussion.js';
-export { DiscussionReply } from './DiscussionReply.js';
-export { Conversation } from './Conversation.js';
-export { DirectMessage } from './DirectMessage.js';
-export { GroupChat } from './GroupChat.js';
-export { Like } from './Like.js';
-
-// Import models to ensure they're registered
+// Import ALL models BEFORE setting up relationships
+// This ensures sequelize is already defined when models load
 import User from './User.js';
 import RefreshToken from './RefreshToken.js';
 import Mood from './Mood.js';
@@ -61,6 +28,48 @@ import Conversation from './Conversation.js';
 import DirectMessage from './DirectMessage.js';
 import GroupChat from './GroupChat.js';
 import Like from './Like.js';
+import Badge from './Badge.js';
+import UserAchievement from './UserAchievement.js';
+import ParentalAccount from './ParentalAccount.js';
+import ChatMessage from './ChatMessage.js';
+import Post from './Post.js';
+import Thread from './Thread.js';
+import ThreadReply from './ThreadReply.js';
+import Comment from './Comment.js';
+import { seedStories } from '../seeds/stories.js';
+import { seedQuizzes } from '../seeds/quizzes.js';
+import { seedGroups } from '../seeds/groups.js';
+
+// Export all models AFTER they're imported
+export { User };
+export { RefreshToken };
+export { Mood };
+export { Journal };
+export { Story };
+export { Unit };
+export { Lesson };
+export { Challenge };
+export { Quiz };
+export { QuizQuestion };
+export { QuizProgress };
+export { UserStoryProgress };
+export { Leaderboard };
+export { Group };
+export { GroupMember };
+export { Discussion };
+export { DiscussionReply };
+export { Conversation };
+export { DirectMessage };
+export { GroupChat };
+export { Like };
+export { Badge };
+export { UserAchievement };
+export { ParentalAccount };
+export { ChatMessage };
+export { Post };
+export { Thread };
+export { ThreadReply };
+export { Comment };
 
 // Establish relationships
 // User relationships
@@ -159,6 +168,57 @@ GroupChat.belongsTo(User, { as: 'sender', foreignKey: 'senderId' });
 // Like relationships (Phase 6)
 User.hasMany(Like, { as: 'likes', foreignKey: 'userId' });
 Like.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+// Achievement relationships (Phase 8 - Child Mode)
+Badge.hasMany(UserAchievement, { as: 'userAchievements', foreignKey: 'badgeId' });
+UserAchievement.belongsTo(Badge, { as: 'badge', foreignKey: 'badgeId' });
+
+User.hasMany(UserAchievement, { as: 'achievements', foreignKey: 'userId' });
+UserAchievement.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+// Parental Account relationships (Phase 8 - Child Mode)
+User.hasMany(ParentalAccount, { as: 'childAccounts', foreignKey: 'childUserId' });
+User.hasMany(ParentalAccount, { as: 'parentAccounts', foreignKey: 'parentUserId' });
+ParentalAccount.belongsTo(User, { as: 'child', foreignKey: 'childUserId' });
+ParentalAccount.belongsTo(User, { as: 'parent', foreignKey: 'parentUserId' });
+
+// Chat relationships (Phase 8B - Teen Mode)
+User.hasMany(ChatMessage, { as: 'chatMessages', foreignKey: 'userId' });
+ChatMessage.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+// Post relationships (Phase 8B - Teen Mode)
+User.hasMany(Post, { as: 'posts', foreignKey: 'userId' });
+Post.belongsTo(User, { as: 'creator', foreignKey: 'userId' });
+
+Group.hasMany(Post, { as: 'posts', foreignKey: 'groupId' });
+Post.belongsTo(Group, { as: 'group', foreignKey: 'groupId' });
+
+// Thread relationships (Phase 8B - Teen Mode)
+Group.hasMany(Thread, { as: 'threads', foreignKey: 'groupId' });
+Thread.belongsTo(Group, { as: 'group', foreignKey: 'groupId' });
+
+User.hasMany(Thread, { as: 'threads', foreignKey: 'creatorId' });
+Thread.belongsTo(User, { as: 'creator', foreignKey: 'creatorId' });
+
+Thread.hasMany(ThreadReply, { as: 'replies', foreignKey: 'threadId' });
+ThreadReply.belongsTo(Thread, { as: 'thread', foreignKey: 'threadId' });
+
+User.hasMany(ThreadReply, { as: 'threadReplies', foreignKey: 'userId' });
+ThreadReply.belongsTo(User, { as: 'creator', foreignKey: 'userId' });
+
+ThreadReply.hasMany(ThreadReply, { as: 'nestedReplies', foreignKey: 'parentReplyId' });
+ThreadReply.belongsTo(ThreadReply, { as: 'parentReply', foreignKey: 'parentReplyId' });
+
+// Comment relationships (Phase 8B - Teen Mode)
+Post.hasMany(Comment, { as: 'comments', foreignKey: 'postId' });
+Comment.belongsTo(Post, { as: 'post', foreignKey: 'postId' });
+
+User.hasMany(Comment, { as: 'comments', foreignKey: 'userId' });
+Comment.belongsTo(User, { as: 'creator', foreignKey: 'userId' });
+
+Comment.hasMany(Comment, { as: 'replies', foreignKey: 'parentCommentId' });
+Comment.belongsTo(Comment, { as: 'parentComment', foreignKey: 'parentCommentId' });
+
 const db = {
   User,
   RefreshToken,
@@ -172,14 +232,24 @@ const db = {
   QuizQuestion,
   QuizProgress,
   UserStoryProgress,
-  Leaderboard,  Group,
+  Leaderboard,
+  Group,
   GroupMember,
   Discussion,
   DiscussionReply,
   Conversation,
   DirectMessage,
   GroupChat,
-  Like,};
+  Like,
+  Badge,
+  UserAchievement,
+  ParentalAccount,
+  ChatMessage,
+  Post,
+  Thread,
+  ThreadReply,
+  Comment,
+};
 
 export const connectDB = async () => {
   try {
@@ -190,6 +260,16 @@ export const connectDB = async () => {
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: false });
       console.log('✅ Database models synchronized');
+      
+      // Seed data if in development
+      try {
+        await seedStories();
+        await seedQuizzes();
+        await seedGroups();
+      } catch (seedError) {
+        console.warn('⚠️ Seeding warning:', seedError.message);
+        // Don't fail server startup if seeding fails
+      }
     }
 
     return sequelize;
