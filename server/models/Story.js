@@ -60,6 +60,17 @@ export const Story = sequelize.define(
         },
       },
     },
+    topicId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'Topics',
+        key: 'id',
+      },
+      onDelete: 'SET NULL',
+      index: true,
+      comment: 'Reference to Topic for organizing stories',
+    },
     targetAgeMin: {
       type: DataTypes.INTEGER,
       allowNull: true,

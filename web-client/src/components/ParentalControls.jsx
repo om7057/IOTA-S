@@ -246,14 +246,13 @@ const ParentalControls = () => {
                   </div>
                 </div>
               ))}
-              </div>
+            </div>
             ) : (
               <p className="no-parents">
                 No parents linked yet. Ask your parent/guardian to add you!
               </p>
             )}
-          )}
-        </div>
+          </div>
       )}
 
       {selectedChild && (

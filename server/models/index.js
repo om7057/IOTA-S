@@ -11,7 +11,9 @@ import User from './User.js';
 import RefreshToken from './RefreshToken.js';
 import Mood from './Mood.js';
 import Journal from './Journal.js';
+import Topic from './Topic.js';
 import Story from './Story.js';
+import NewsStory from './NewsStory.js';
 import Unit from './Unit.js';
 import Lesson from './Lesson.js';
 import Challenge from './Challenge.js';
@@ -36,16 +38,22 @@ import Post from './Post.js';
 import Thread from './Thread.js';
 import ThreadReply from './ThreadReply.js';
 import Comment from './Comment.js';
-import { seedStories } from '../seeds/stories.js';
-import { seedQuizzes } from '../seeds/quizzes.js';
-import { seedGroups } from '../seeds/groups.js';
+import ChildrenCourse from './ChildrenCourse.js';
+import ChildrenUnit from './ChildrenUnit.js';
+import ChildrenLesson from './ChildrenLesson.js';
+import ChildrenChallenge from './ChildrenChallenge.js';
+import ChildrenChallengeOption from './ChildrenChallengeOption.js';
+import ChildrenProgress from './ChildrenProgress.js';
+import ChildrenChallengeProgress from './ChildrenChallengeProgress.js';
 
 // Export all models AFTER they're imported
 export { User };
 export { RefreshToken };
 export { Mood };
 export { Journal };
+export { Topic };
 export { Story };
+export { NewsStory };
 export { Unit };
 export { Lesson };
 export { Challenge };
@@ -70,6 +78,13 @@ export { Post };
 export { Thread };
 export { ThreadReply };
 export { Comment };
+export { ChildrenCourse };
+export { ChildrenUnit };
+export { ChildrenLesson };
+export { ChildrenChallenge };
+export { ChildrenChallengeOption };
+export { ChildrenProgress };
+export { ChildrenChallengeProgress };
 
 // Establish relationships
 // User relationships
@@ -111,6 +126,13 @@ UserStoryProgress.belongsTo(Challenge, { as: 'challenge', foreignKey: 'challenge
 // Leaderboard relationships
 User.hasMany(Leaderboard, { as: 'leaderboardEntries', foreignKey: 'userId' });
 Leaderboard.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+// Topic relationships
+Topic.hasMany(Story, { as: 'stories', foreignKey: 'topicId' });
+Story.belongsTo(Topic, { as: 'topic', foreignKey: 'topicId' });
+
+Topic.hasMany(NewsStory, { as: 'newsStories', foreignKey: 'topicId' });
+NewsStory.belongsTo(Topic, { as: 'topic', foreignKey: 'topicId' });
 
 // Story hierarchy relationships
 Story.hasMany(Unit, { as: 'units', foreignKey: 'storyId' });
@@ -219,12 +241,41 @@ Comment.belongsTo(User, { as: 'creator', foreignKey: 'userId' });
 Comment.hasMany(Comment, { as: 'replies', foreignKey: 'parentCommentId' });
 Comment.belongsTo(Comment, { as: 'parentComment', foreignKey: 'parentCommentId' });
 
+// ==================== Children Learning Course Relationships ====================
+// Children Course hierarchy
+ChildrenCourse.hasMany(ChildrenUnit, { as: 'units', foreignKey: 'courseId' });
+ChildrenUnit.belongsTo(ChildrenCourse, { as: 'course', foreignKey: 'courseId' });
+
+ChildrenUnit.hasMany(ChildrenLesson, { as: 'lessons', foreignKey: 'unitId' });
+ChildrenLesson.belongsTo(ChildrenUnit, { as: 'unit', foreignKey: 'unitId' });
+
+ChildrenLesson.hasMany(ChildrenChallenge, { as: 'challenges', foreignKey: 'lessonId' });
+ChildrenChallenge.belongsTo(ChildrenLesson, { as: 'lesson', foreignKey: 'lessonId' });
+
+ChildrenChallenge.hasMany(ChildrenChallengeOption, { as: 'options', foreignKey: 'challengeId' });
+ChildrenChallengeOption.belongsTo(ChildrenChallenge, { as: 'challenge', foreignKey: 'challengeId' });
+
+// Children Progress tracking
+User.hasOne(ChildrenProgress, { as: 'childrenProgress', foreignKey: 'userId' });
+ChildrenProgress.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+ChildrenProgress.belongsTo(ChildrenCourse, { as: 'activeCourse', foreignKey: 'activeCourseId' });
+ChildrenCourse.hasMany(ChildrenProgress, { as: 'playerProgress', foreignKey: 'activeCourseId' });
+
+User.hasMany(ChildrenChallengeProgress, { as: 'challengeProgress', foreignKey: 'userId' });
+ChildrenChallengeProgress.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+ChildrenChallenge.hasMany(ChildrenChallengeProgress, { as: 'playerProgress', foreignKey: 'challengeId' });
+ChildrenChallengeProgress.belongsTo(ChildrenChallenge, { as: 'challenge', foreignKey: 'challengeId' });
+
 const db = {
   User,
   RefreshToken,
   Mood,
   Journal,
+  Topic,
   Story,
+  NewsStory,
   Unit,
   Lesson,
   Challenge,
@@ -249,6 +300,13 @@ const db = {
   Thread,
   ThreadReply,
   Comment,
+  ChildrenCourse,
+  ChildrenUnit,
+  ChildrenLesson,
+  ChildrenChallenge,
+  ChildrenChallengeOption,
+  ChildrenProgress,
+  ChildrenChallengeProgress,
 };
 
 export const connectDB = async () => {
@@ -258,18 +316,8 @@ export const connectDB = async () => {
 
     // Sync models (development only)
     if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: false });
+      await sequelize.sync({ force: false });
       console.log('✅ Database models synchronized');
-      
-      // Seed data if in development
-      try {
-        await seedStories();
-        await seedQuizzes();
-        await seedGroups();
-      } catch (seedError) {
-        console.warn('⚠️ Seeding warning:', seedError.message);
-        // Don't fail server startup if seeding fails
-      }
     }
 
     return sequelize;

@@ -115,13 +115,13 @@ export const seedStories = async () => {
     for (const lesson of lessons) {
       const challenge = await Challenge.create({
         lessonId: lesson.id,
+        sequence: 1,
         title: `${lesson.title} - Challenge`,
         description: `Complete this challenge to master ${lesson.title}`,
-        content: `Challenge instructions for ${lesson.title}`,
-        type: 'quiz',
-        difficultyLevel: 'beginner',
-        pointsReward: 50,
-        isPublished: true,
+        prompt: `What did you learn from ${lesson.title}? Please answer the following question.`,
+        type: 'reflection',
+        points: 10,
+        isOptional: false,
       });
       challenges.push(challenge);
     }

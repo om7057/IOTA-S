@@ -13,6 +13,8 @@ const Sidebar = ({ onClose, isMobile }) => {
   // Children navigation (age < 13)
   const childrenItems = [
     { name: "Home", path: "/", icon: <Home className="w-5 h-5" /> },
+    { name: "🧬 Learn", path: "/children", icon: <BookOpen className="w-5 h-5" /> },
+    { name: "📰 News", path: "/children/news", icon: <Newspaper className="w-5 h-5" /> },
     { name: "Stories", path: "/stories", icon: <BookOpen className="w-5 h-5" /> },
     { name: "Quizzes", path: "/quizzes", icon: <Lightbulb className="w-5 h-5" /> },
     { name: "My Mood", path: "/mood", icon: <Smile className="w-5 h-5" /> },

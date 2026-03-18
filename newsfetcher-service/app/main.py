@@ -153,6 +153,10 @@ def categorize_article(article):
         return "Uncategorized"
 
 async def fetch_news_articles():
+    # Demo mode - return sample articles if API key is missing
+    if not NEWSAPI_KEY:
+        return get_demo_articles()
+    
     params = {
         "q": "child safety OR child protection OR child rights",
         "language": "en",
@@ -160,20 +164,78 @@ async def fetch_news_articles():
         "pageSize": 10,
         "apiKey": NEWSAPI_KEY
     }
-    async with httpx.AsyncClient() as client:
-        response = await client.get(NEWSAPI_URL, params=params)
-        response.raise_for_status()
-        data = response.json()
-        articles = data.get("articles", [])
-        return [
-            {
-                "title": a["title"],
-                "description": a.get("description", ""),
-                "content": a.get("content", ""),
-                "source": a["source"]["name"]
-            }
-            for a in articles
-        ]
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(NEWSAPI_URL, params=params, timeout=10.0)
+            response.raise_for_status()
+            data = response.json()
+            articles = data.get("articles", [])
+            return [
+                {
+                    "title": a["title"],
+                    "description": a.get("description", ""),
+                    "content": a.get("content", ""),
+                    "source": a["source"]["name"]
+                }
+                for a in articles
+            ]
+    except Exception as e:
+        print(f"Error fetching from NewsAPI: {e}")
+        # Fallback to demo articles on any error
+        return get_demo_articles()
+
+def get_demo_articles():
+    """Return demo articles for testing without NewsAPI key"""
+    return [
+        {
+            "title": "New Child Safety Initiative Launched in Schools",
+            "description": "Educational programs help children identify and report unsafe situations.",
+            "content": "A comprehensive new initiative has been launched to educate children about personal safety and recognizing warning signs in adult behavior.",
+            "source": "BBC News"
+        },
+        {
+            "title": "Online Safety: Protecting Children from Digital Threats",
+            "description": "Expert guide on teaching children to recognize phishing and suspicious online behavior.",
+            "content": "Cybersecurity experts warn parents about increasing online exploitation of children and recommend digital literacy programs.",
+            "source": "TechSafety Daily"
+        },
+        {
+            "title": "Child Labour Awareness Day: Rights and Protection",
+            "description": "Global movement highlights the importance of education over exploitation.",
+            "content": "Organizations worldwide are raising awareness about child labor and promoting access to safe education for all children.",
+            "source": "UN News"
+        },
+        {
+            "title": "Building Supportive Networks: Safe Adults Matter",
+            "description": "Research shows importance of trusted adult relationships in child development and safety.",
+            "content": "New study emphasizes the critical role of teachers, counselors, and mentors in child safety and wellbeing.",
+            "source": "Child Development Review"
+        },
+        {
+            "title": "Digital Footprint: Teaching Kids About Online Privacy",
+            "description": "Educators teach children the importance of privacy and permanence of digital sharing.",
+            "content": "As children spend more time online, understanding digital permanence becomes crucial for their future.",
+            "source": "Education Today"
+        },
+        {
+            "title": "Boundaries and Consent: Age-Appropriate Education",
+            "description": "Experts recommend teaching children about personal boundaries from an early age.",
+            "content": "Teaching children to recognize and communicate boundaries is essential for their physical and emotional safety.",
+            "source": "Psychology & Development"
+        },
+        {
+            "title": "Child Marriage Prevention: Breaking the Cycle",
+            "description": "Global efforts to end child marriage and ensure girls' access to education.",
+            "content": "International organizations work to eliminate child marriage through education and community engagement.",
+            "source": "Global Rights Forum"
+        },
+        {
+            "title": "Stranger Awareness: Teaching Street Safety",
+            "description": "Guidance on helping children navigate public spaces safely.",
+            "content": "Child safety experts provide evidence-based strategies for teaching children about personal safety in public.",
+            "source": "Safety Watch"
+        }
+    ]
 
 def transform_story_for_node(story_data: Dict[str, Any]) -> Dict[str, Any]:
     return story_data

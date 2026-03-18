@@ -14,8 +14,11 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import moodRoutes from './routes/moods.js';
 import journalRoutes from './routes/journals.js';
+import topicsRoutes from './routes/topics.js';
 import storyRoutes from './routes/stories.js';
+import newsStoriesRoutes from './routes/news-stories.js';
 import quizRoutes from './routes/quizzes.js';
+import childrenCoursesRoutes from './routes/children-courses.js';
 import leaderboardRoutes from './routes/leaderboards.js';
 import progressRoutes from './routes/progress.js';
 import adminRoutes from './routes/admin.js';
@@ -101,10 +104,13 @@ app.use('/api/users', userRoutes);
 // ==================== Phase 4: Mood, Journal, Story Routes ====================
 app.use('/api/moods', moodRoutes);
 app.use('/api/journals', journalRoutes);
+app.use('/api/topics', topicsRoutes);
 app.use('/api/stories', storyRoutes);
+app.use('/api/news-stories', newsStoriesRoutes);
 
 // ==================== Phase 5: Quiz, Leaderboard, Progress Routes ====================
 app.use('/api/quizzes', quizRoutes);
+app.use('/api/children-courses', childrenCoursesRoutes);
 app.use('/api/leaderboards', leaderboardRoutes);
 app.use('/api/progress', progressRoutes);
 
@@ -126,7 +132,7 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/forums', forumsRoutes);
 app.use('/api/social', socialRoutes);
 
-logger.info('Routes registered: /api/auth (Phase 2), /api/users (Phase 3), /api/moods (Phase 4), /api/journals (Phase 4), /api/stories (Phase 4), /api/quizzes (Phase 5), /api/leaderboards (Phase 5), /api/progress (Phase 5), /api/admin (Admin), /api/groups (Phase 6), /api/discussions (Phase 6), /api/messages (Phase 6), /api/chats (Phase 6), /api/achievements (Phase 8), /api/parental (Phase 8), /api/chatbot (Phase 8B), /api/forums (Phase 8B), /api/social (Phase 8B)');
+logger.info('Routes registered: /api/auth (Phase 2), /api/users (Phase 3), /api/moods (Phase 4), /api/journals (Phase 4), /api/topics (Phase 4), /api/stories (Phase 4), /api/quizzes (Phase 5), /api/leaderboards (Phase 5), /api/progress (Phase 5), /api/admin (Admin), /api/groups (Phase 6), /api/discussions (Phase 6), /api/messages (Phase 6), /api/chats (Phase 6), /api/achievements (Phase 8), /api/parental (Phase 8), /api/chatbot (Phase 8B), /api/forums (Phase 8B), /api/social (Phase 8B)');
 
 // ==================== Error Handling ====================
 

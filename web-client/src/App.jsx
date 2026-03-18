@@ -32,6 +32,10 @@ import Forums from "./components/Forums";
 import SocialFeed from "./components/SocialFeed";
 import Achievements from "./components/Achievements";
 import ParentalControls from "./components/ParentalControls";
+import ChildrenCoursesPage from "./pages/ChildrenCoursesPage";
+import ChildrenLessonPage from "./pages/ChildrenLessonPage";
+import ChildrenNewsStoryPage from "./pages/ChildrenNewsStoryPage";
+import ChildrenNewsGenerationPage from "./pages/ChildrenNewsGenerationPage";
 import { Toaster } from "react-hot-toast";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 
@@ -109,6 +113,11 @@ const AppContent = () => {
         {/* Child Mode Routes (age < 13) - Phase 8A */}
         {age && age < 13 && (
           <>
+            <Route path="/children" element={<ChildrenCoursesPage />} />
+            <Route path="/children/news" element={<ChildrenNewsGenerationPage />} />
+            <Route path="/children/news-story/:storyId" element={<ChildrenNewsStoryPage />} />
+            <Route path="/children/course/:courseId" element={<ChildrenLessonPage />} />
+            <Route path="/children/lesson/:lessonId" element={<ChildrenLessonPage />} />
             <Route path="/achievements" element={<Achievements />} />
             <Route path="/parental-controls" element={<ParentalControls />} />
           </>
