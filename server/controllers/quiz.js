@@ -333,7 +333,7 @@ export const deleteQuestion = async (req, res) => {
 export const submitQuizAttempt = async (req, res) => {
   try {
     const { quizId } = req.params;
-    const { answers, timeSpent } = req.body;
+    const { answers, timeSpent, emotionReport } = req.body;
     const userId = req.user.id;
 
     const quiz = await Quiz.findByPk(quizId, {
@@ -374,6 +374,11 @@ export const submitQuizAttempt = async (req, res) => {
 
     const scorePercentage = Math.round((pointsEarned / quiz.totalPoints) * 100);
     const passed = scorePercentage >= quiz.passingScore;
+
+    // Store optional assessment emotion report in attempt metadata.
+    if (emotionReport && typeof emotionReport === 'object') {
+      scoredAnswers.__emotionReport = emotionReport;
+    }
 
     // Create progress record
     const lastAttempt = await QuizProgress.findOne({
@@ -419,6 +424,7 @@ export const submitQuizAttempt = async (req, res) => {
         pointsEarned,
         totalPoints: quiz.totalPoints,
         attempt,
+        emotionReport: scoredAnswers.__emotionReport || null,
       },
     });
   } catch (error) {

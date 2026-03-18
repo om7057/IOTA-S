@@ -3,36 +3,26 @@ import { Link } from "react-router-dom";
 import { Lightbulb, BookOpen, Play, Search, Loader2, Info } from "lucide-react";
 
 const QuizLandingPage = () => {
-  const [storiesWithQuiz, setStoriesWithQuiz] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStories = async () => {
+    const fetchQuizzes = async () => {
       setLoading(true);
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-        const res = await fetch(`${apiUrl}/stories`);
-        const allStories = await res.json();
-
-        const filtered = [];
-
-        for (const story of allStories) {
-          const quizRes = await fetch(`${apiUrl}/quiz/story/${story._id}`);
-          const quizData = await quizRes.json();
-          if (Array.isArray(quizData) && quizData.length > 0) {
-            filtered.push(story);
-          }
-        }
-
-        setStoriesWithQuiz(filtered);
+        const res = await fetch(`${apiUrl}/quizzes`);
+        const payload = await res.json();
+        setQuizzes(payload?.data || []);
       } catch (err) {
-        console.error("Error fetching stories with quizzes:", err);
+        console.error("Error fetching quizzes:", err);
+        setQuizzes([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStories();
+    fetchQuizzes();
   }, []);
 
   return (
@@ -53,33 +43,33 @@ const QuizLandingPage = () => {
           <Loader2 className="w-10 h-10 text-sky-500 animate-spin mb-4" />
           <p className="text-gray-500 font-medium">Loading quizzes...</p>
         </div>
-      ) : storiesWithQuiz.length === 0 ? (
+      ) : quizzes.length === 0 ? (
         <div className="card p-8 text-center">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
             <Search className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No quizzes available</h3>
-          <p className="text-gray-500">Check back after reading more stories!</p>
+          <p className="text-gray-500">Check back later for new quizzes.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {storiesWithQuiz.map((story) => (
-            <div key={story._id} className="card p-6 hover:shadow-md transition-all group">
+          {quizzes.map((quiz) => (
+            <div key={quiz.id} className="card p-6 hover:shadow-md transition-all group">
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center flex-shrink-0 text-sky-600">
                   <BookOpen className="w-6 h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-semibold text-gray-900 group-hover:text-sky-600 transition-colors truncate">
-                    {story.title}
+                    {quiz.title}
                   </h3>
                   <p className="text-gray-500 text-sm line-clamp-2">
-                    {story.description || "Test your knowledge about this story!"}
+                    {quiz.description || "Test your knowledge!"}
                   </p>
                 </div>
               </div>
               <Link 
-                to={`/quiz/${story._id}`}
+                to={`/quiz/${quiz.id}`}
                 className="btn btn-primary w-full justify-center"
               >
                 <Play className="w-5 h-5 mr-2" />

@@ -7,6 +7,7 @@ import { Loader2, AlertCircle, Search, Sparkles, ChevronLeft, Lightbulb, Video }
 
 const StoryPlayer = () => {
   const { storyId } = useParams();
+  const resolvedStoryId = storyId;
   const navigate = useNavigate();
   const [story, setStory] = useState(null);
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
@@ -14,6 +15,7 @@ const StoryPlayer = () => {
   const [error, setError] = useState("");
   const [storyCompleted, setStoryCompleted] = useState(false);
   const [sceneTransition, setSceneTransition] = useState(false);
+  const [cameraError, setCameraError] = useState("");
 
   const {
     videoRef,
@@ -24,11 +26,18 @@ const StoryPlayer = () => {
 
   useEffect(() => {
     const fetchStory = async () => {
+      if (!resolvedStoryId) {
+        setError('Story ID is missing');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const res = await fetch(`http://localhost:5000/api/stories/${storyId}`);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const res = await fetch(`${apiUrl}/stories/${resolvedStoryId}`);
         if (!res.ok) throw new Error("Failed to fetch story");
-        const data = await res.json();
-        setStory(data);
+        const payload = await res.json();
+        setStory(payload?.data || payload);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -37,19 +46,29 @@ const StoryPlayer = () => {
     };
 
     fetchStory();
-  }, [storyId]);
+  }, [resolvedStoryId]);
 
   useEffect(() => {
     let localStream;
+
+    if (!window.isSecureContext) {
+      setCameraError('Camera needs a secure origin (localhost or HTTPS).');
+      return;
+    }
 
     navigator.mediaDevices
       .getUserMedia({ video: true })
       .then((stream) => {
         localStream = stream;
+        setCameraError("");
 
         const waitForVideoRef = () => {
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
+            videoRef.current.play().catch((err) => {
+              setCameraError('Unable to autoplay camera preview. Click the page and allow camera.');
+              console.error('Video play error:', err);
+            });
           } else {
             requestAnimationFrame(waitForVideoRef);
           }
@@ -59,6 +78,7 @@ const StoryPlayer = () => {
         startDetection();
       })
       .catch((err) => {
+        setCameraError('Camera permission denied or camera unavailable.');
         console.error("Error accessing webcam:", err);
       });
 
@@ -164,6 +184,12 @@ const StoryPlayer = () => {
         {/* Emotion Monitor Widget */}
         <StoryEmotionMonitor videoRef={videoRef} emotionTimeline={emotionTimeline} />
 
+        {cameraError && (
+          <div className="mb-4 p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+            {cameraError}
+          </div>
+        )}
+
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -223,11 +249,11 @@ const StoryPlayer = () => {
             
             <div className="text-center pt-4">
               <button
-                onClick={() => navigate(`/quiz/${storyId}`)}
+                onClick={() => navigate('/quiz-landing')}
                 className="btn bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 hover:shadow-xl text-lg px-8"
               >
                 <Lightbulb className="w-5 h-5 mr-2" />
-                Take the Quiz
+                Go to Quizzes
               </button>
             </div>
           </div>

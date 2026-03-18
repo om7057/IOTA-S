@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import useEmotionDetection from './useEmotionDetection';
+import EmotionSummary from './EmotionSummary';
 import './ChildrenQuiz.css';
 
 const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
@@ -6,7 +8,16 @@ const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
   const [feedbackText, setFeedbackText] = useState(null);
   const [selectedOptionId, setSelectedOptionId] = useState(null);
   const [showingFeedback, setShowingFeedback] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [storyCompleted, setStoryCompleted] = useState(false);
   const challenges = lesson?.challenges || [];
+
+  const {
+    videoRef,
+    emotionTimeline,
+    startDetection,
+    stopDetection,
+  } = useEmotionDetection();
 
   // Pick a stable start node: first story node by order, otherwise first challenge.
   useEffect(() => {
@@ -18,6 +29,52 @@ const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
       }
     }
   }, [challenges]);
+
+  useEffect(() => {
+    let localStream;
+
+    if (!currentNodeId) return;
+
+    if (!window.isSecureContext) {
+      setCameraError('Camera requires localhost/HTTPS secure context.');
+      return;
+    }
+
+    navigator.mediaDevices
+      .getUserMedia({ video: true })
+      .then((stream) => {
+        localStream = stream;
+        setCameraError('');
+
+        const attachStream = () => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(() => {
+              setCameraError('Camera preview blocked. Allow camera permission in browser.');
+            });
+          } else {
+            requestAnimationFrame(attachStream);
+          }
+        };
+
+        attachStream();
+        startDetection();
+      })
+      .catch(() => {
+        setCameraError('Camera permission denied or camera unavailable.');
+      });
+
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+      }
+      stopDetection();
+    };
+  }, [currentNodeId, startDetection, stopDetection, videoRef]);
 
   // Get the current story node
   const currentNode = useMemo(() => {
@@ -46,7 +103,13 @@ const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
     // If correct but no next node, mark as complete
     else if (selected.correct && !selected.nextChallengeId) {
       setTimeout(() => {
-        onComplete();
+        if (videoRef.current && videoRef.current.srcObject) {
+          videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+          videoRef.current.srcObject = null;
+        }
+        stopDetection();
+        setStoryCompleted(true);
+        setShowingFeedback(false);
       }, 2500);
     }
     // If wrong, let them retry (stay on same node after feedback)
@@ -74,9 +137,73 @@ const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
   const selectedOption = currentNode.options?.find((opt) => opt.id === selectedOptionId);
   const isCorrect = selectedOption?.correct;
 
+  if (storyCompleted) {
+    return (
+      <div className="story-flow">
+        <div className="story-card">
+          <div className="story-header-row">
+            <h2>Story Complete! 🎉</h2>
+            <button className="story-secondary-btn" onClick={onBack}>
+              Back to Lesson
+            </button>
+          </div>
+
+          <EmotionSummary
+            emotionTimeline={emotionTimeline}
+            storyTitle={lesson?.title || 'Interactive Story'}
+          />
+
+          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
+            <button className="story-primary-btn" onClick={onComplete}>
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="story-flow">
       <div className="story-card">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+          <div style={{ width: '220px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e5e7eb', background: '#000' }}>
+            <div style={{ position: 'relative' }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                style={{ width: '100%', height: '130px', objectFit: 'cover', display: 'block' }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '8px',
+                  left: '8px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  padding: '4px 8px',
+                  borderRadius: '999px',
+                }}
+              >
+                LIVE
+              </span>
+            </div>
+            <div style={{ background: '#f8fafc', padding: '8px 10px', fontSize: '12px', color: '#334155' }}>
+              Emotion samples: {emotionTimeline.length}
+            </div>
+          </div>
+        </div>
+
+        {cameraError && (
+          <div style={{ marginBottom: '12px', padding: '10px 12px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', color: '#92400e', fontSize: '13px' }}>
+            {cameraError}
+          </div>
+        )}
+
         <div className="story-header-row">
           <h2>Interactive Story</h2>
           <button className="story-secondary-btn" onClick={onBack}>
@@ -128,11 +255,9 @@ const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
             {isCorrect && !currentNode.options?.find(
               (opt) => opt.id === selectedOptionId
             )?.nextChallengeId && (
-              <button className="story-primary-btn" onClick={() => {
-                onComplete();
-              }}>
-                Story Complete! Continue
-              </button>
+              <div style={{ marginTop: '10px', fontWeight: 600 }}>
+                Story complete. Preparing emotional analysis report...
+              </div>
             )}
           </div>
         )}

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import useEmotionDetection from '../components/useEmotionDetection';
+import EmotionSummary from '../components/EmotionSummary';
 import './ChildrenLesson.css';
 
 const ChildrenNewsStoryPage = () => {
@@ -10,7 +12,16 @@ const ChildrenNewsStoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sceneTransition, setSceneTransition] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [storyCompleted, setStoryCompleted] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+  const {
+    videoRef,
+    emotionTimeline,
+    startDetection,
+    stopDetection,
+  } = useEmotionDetection();
 
   useEffect(() => {
     const fetchStory = async () => {
@@ -96,10 +107,63 @@ const ChildrenNewsStoryPage = () => {
     fetchStory();
   }, [storyId]);
 
+  useEffect(() => {
+    let localStream;
+
+    if (loading || !story) {
+      return;
+    }
+
+    if (!window.isSecureContext) {
+      setCameraError('Camera requires localhost/HTTPS secure context.');
+      return;
+    }
+
+    navigator.mediaDevices
+      .getUserMedia({ video: true })
+      .then((stream) => {
+        localStream = stream;
+        setCameraError('');
+
+        const attachStream = () => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(() => {
+              setCameraError('Camera preview blocked. Click page and allow camera.');
+            });
+          } else {
+            requestAnimationFrame(attachStream);
+          }
+        };
+
+        attachStream();
+        startDetection();
+      })
+      .catch(() => {
+        setCameraError('Camera permission denied or no camera found.');
+      });
+
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+      }
+      stopDetection();
+    };
+  }, [loading, story, startDetection, stopDetection, videoRef]);
+
   const handleOptionClick = (nextIndex) => {
     if (nextIndex === -1) {
       // Story end
-      navigate('/children/news');
+      stopDetection();
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      setStoryCompleted(true);
       return;
     }
 
@@ -190,6 +254,44 @@ const ChildrenNewsStoryPage = () => {
   return (
     <div className="news-story-player">
       <div className="story-card">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+          <div style={{ width: '220px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e5e7eb', background: '#000' }}>
+            <div style={{ position: 'relative' }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                style={{ width: '100%', height: '130px', objectFit: 'cover', display: 'block' }}
+              />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '8px',
+                  left: '8px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  padding: '4px 8px',
+                  borderRadius: '999px',
+                }}
+              >
+                LIVE
+              </span>
+            </div>
+            <div style={{ background: '#f8fafc', padding: '8px 10px', fontSize: '12px', color: '#334155' }}>
+              Emotion samples: {emotionTimeline.length}
+            </div>
+          </div>
+        </div>
+
+        {cameraError && (
+          <div style={{ marginBottom: '12px', padding: '10px 12px', background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', color: '#92400e', fontSize: '13px' }}>
+            {cameraError}
+          </div>
+        )}
+
         {/* Header */}
         <div className="story-header">
           <h1>{story.title}</h1>
@@ -208,49 +310,70 @@ const ChildrenNewsStoryPage = () => {
         </div>
 
         {/* Scene Content */}
-        <div className={`scene-content ${sceneTransition ? 'fade-out' : 'fade-in'}`}>
-          <h2 className="scene-title">{currentScene?.title}</h2>
+        {!storyCompleted ? (
+          <div className={`scene-content ${sceneTransition ? 'fade-out' : 'fade-in'}`}>
+            <h2 className="scene-title">{currentScene?.title}</h2>
 
-          {currentScene?.image && (
-            <img 
-              src={currentScene.image} 
-              alt={currentScene.title}
-              className="scene-image"
-            />
-          )}
-
-          <p className="scene-text">{currentScene?.text}</p>
-
-          {/* Options */}
-          <div className="scene-options">
-            {currentScene?.options && currentScene.options.length > 0 ? (
-              currentScene.options.map((option, idx) => (
-                <button
-                  key={idx}
-                  className="option-btn"
-                  onClick={() => handleOptionClick(option.to)}
-                >
-                  <span className="option-letter">
-                    {String.fromCharCode(65 + idx)}
-                  </span>
-                  <span className="option-text">{option.text}</span>
-                </button>
-              ))
-            ) : (
-              <div className="story-complete">
-                <p className="complete-emoji">✨</p>
-                <h3>Story Complete!</h3>
-                <p>Great job making safe choices!</p>
-                <button 
-                  className="back-btn"
-                  onClick={() => navigate('/children/news')}
-                >
-                  ← Back to News
-                </button>
-              </div>
+            {currentScene?.image && (
+              <img 
+                src={currentScene.image} 
+                alt={currentScene.title}
+                className="scene-image"
+              />
             )}
+
+            <p className="scene-text">{currentScene?.text}</p>
+
+            {/* Options */}
+            <div className="scene-options">
+              {currentScene?.options && currentScene.options.length > 0 ? (
+                currentScene.options.map((option, idx) => (
+                  <button
+                    key={idx}
+                    className="option-btn"
+                    onClick={() => handleOptionClick(option.to)}
+                  >
+                    <span className="option-letter">
+                      {String.fromCharCode(65 + idx)}
+                    </span>
+                    <span className="option-text">{option.text}</span>
+                  </button>
+                ))
+              ) : (
+                <div className="story-complete">
+                  <p className="complete-emoji">✨</p>
+                  <h3>Story Complete!</h3>
+                  <p>Great job making safe choices!</p>
+                  <button
+                    className="back-btn"
+                    onClick={() => {
+                      stopDetection();
+                      if (videoRef.current && videoRef.current.srcObject) {
+                        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+                        videoRef.current.srcObject = null;
+                      }
+                      setStoryCompleted(true);
+                    }}
+                  >
+                    Show Emotion Report
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ marginTop: '16px' }}>
+            <EmotionSummary emotionTimeline={emotionTimeline} storyTitle={story.title} />
+            <div style={{ marginTop: '16px', textAlign: 'center' }}>
+              <button
+                className="back-btn"
+                onClick={() => navigate('/children/news')}
+              >
+                ← Back to News
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
