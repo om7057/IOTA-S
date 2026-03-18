@@ -13,7 +13,7 @@ const Levels = () => {
   useEffect(() => {
     const fetchTopic = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/topics/${topicId}`);
+        const response = await fetch(`http://localhost:3000/api/topics/${topicId}`);
         const data = await response.json();
         setTopicName(data.name || "Topic");
       } catch (err) {
@@ -24,7 +24,7 @@ const Levels = () => {
     const fetchLevels = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/levels/topic/${topicId}`);
+        const response = await fetch(`http://localhost:3000/api/levels/topic/${topicId}`);
         const data = await response.json();
         setLevels(data);
         setLoading(false);

@@ -20,7 +20,7 @@ router.get('/topic/:topicId', newsStoriesController.getNewsStoriesByTopic);
 router.get('/:newsStoryId', newsStoriesController.getNewsStoryById);
 
 // Protected routes
-router.post('/', newsStoriesController.createNewsStory);
+router.post('/', verifyToken, newsStoriesController.createNewsStory);
 router.put('/:newsStoryId', verifyToken, newsStoriesController.updateNewsStory);
 router.delete('/:newsStoryId', verifyToken, newsStoriesController.deleteNewsStory);
 

@@ -20,7 +20,7 @@ const Quiz = () => {
       if (!user?.id) return;
       try {
         const res = await fetch(
-          `http://localhost:5000/api/users/${user.id}`,
+          `http://localhost:3000/api/users/${user.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -36,7 +36,7 @@ const Quiz = () => {
     const fetchQuiz = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/quiz/story/${storyId}`
+          `http://localhost:3000/api/quiz/story/${storyId}`
         );
         const data = await response.json();
         setQuizList(Array.isArray(data) ? data : []);
@@ -47,7 +47,7 @@ const Quiz = () => {
 
     const fetchStoryMeta = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/stories/${storyId}`);
+        const res = await fetch(`http://localhost:3000/api/stories/${storyId}`);
         const data = await res.json();
         setStoryMeta(data);
       } catch (err) {
@@ -94,7 +94,7 @@ const Quiz = () => {
       };
 
       const progressRes = await fetch(
-        "http://localhost:5000/api/quiz-progress",
+        "http://localhost:3000/api/quiz-progress",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

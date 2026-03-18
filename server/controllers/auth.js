@@ -22,12 +22,19 @@ import { Op } from 'sequelize';
  */
 export const signup = async (req, res, next) => {
   try {
-    const { email, password, firstName, lastName, age, gender } = req.body;
+    const { email, password, firstName, lastName, displayName, age, gender } = req.body;
+
+    const resolvedFirstName = firstName || (displayName ? displayName.trim().split(/\s+/)[0] : undefined);
+    const resolvedLastName =
+      lastName ||
+      (displayName && displayName.trim().split(/\s+/).length > 1
+        ? displayName.trim().split(/\s+/).slice(1).join(' ')
+        : '');
 
     // Validate inputs
-    if (!email || !password || !firstName || !lastName || !age) {
+    if (!email || !password || !resolvedFirstName || age === undefined || age === null) {
       return res.status(400).json({
-        error: 'Missing required fields: email, password, firstName, lastName, age',
+        error: 'Missing required fields: email, password, and either firstName/lastName or displayName, plus age',
       });
     }
 
@@ -68,8 +75,8 @@ export const signup = async (req, res, next) => {
     const user = await User.create({
       email,
       passwordHash,
-      firstName,
-      lastName,
+      firstName: resolvedFirstName,
+      lastName: resolvedLastName,
       age: parseInt(age),
       gender: gender || 'prefer-not',
       oauthProvider: 'local',
@@ -101,6 +108,7 @@ export const signup = async (req, res, next) => {
         age: user.age,
         userType: user.userType,
       },
+      token: accessToken,
       tokens: {
         accessToken,
         refreshToken,
@@ -184,6 +192,7 @@ export const signin = async (req, res, next) => {
         age: user.age,
         userType: user.userType,
       },
+      token: accessToken,
       tokens: {
         accessToken,
         refreshToken,

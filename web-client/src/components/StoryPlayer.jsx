@@ -25,7 +25,7 @@ const StoryPlayer = () => {
   useEffect(() => {
     const fetchStory = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/stories/${storyId}`);
+        const res = await fetch(`http://localhost:3000/api/stories/${storyId}`);
         if (!res.ok) throw new Error("Failed to fetch story");
         const data = await res.json();
         setStory(data);

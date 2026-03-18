@@ -1,3 +1,3 @@
 // API URL for the backend server
-// Use the machine's actual IP address so Android emulator can reach it
-export const API_URL = 'http://10.236.168.104:3000/api'; 
+// Configure via Expo env: EXPO_PUBLIC_API_URL=http://<host>:3000/api
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';

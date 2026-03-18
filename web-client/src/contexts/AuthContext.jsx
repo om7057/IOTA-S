@@ -28,6 +28,10 @@ export function AuthProvider({ children }) {
 
   const signUp = async (email, password, displayName, userAge, gender) => {
     try {
+      const nameParts = (displayName || '').trim().split(/\s+/).filter(Boolean);
+      const firstName = nameParts[0] || 'User';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
       const response = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,6 +39,8 @@ export function AuthProvider({ children }) {
           email,
           password,
           displayName,
+          firstName,
+          lastName,
           age: parseInt(userAge),
           gender: gender.toLowerCase(),
         }),
@@ -46,13 +52,17 @@ export function AuthProvider({ children }) {
       }
 
       const data = await response.json();
-      setToken(data.token);
+      const accessToken = data?.tokens?.accessToken || data?.token;
+      if (!accessToken) {
+        throw new Error('Invalid auth response: missing access token');
+      }
+      setToken(accessToken);
       setUser(data.user);
       if (userAge) {
         setAge(parseInt(userAge));
         localStorage.setItem('userAge', userAge);
       }
-      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('authToken', accessToken);
       localStorage.setItem('authUser', JSON.stringify(data.user));
 
       return data;
@@ -76,9 +86,13 @@ export function AuthProvider({ children }) {
       }
 
       const data = await response.json();
-      setToken(data.token);
+      const accessToken = data?.tokens?.accessToken || data?.token;
+      if (!accessToken) {
+        throw new Error('Invalid auth response: missing access token');
+      }
+      setToken(accessToken);
       setUser(data.user);
-      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('authToken', accessToken);
       localStorage.setItem('authUser', JSON.stringify(data.user));
 
       return data;
@@ -105,9 +119,13 @@ export function AuthProvider({ children }) {
       }
 
       const data = await response.json();
-      setToken(data.token);
+      const accessToken = data?.tokens?.accessToken || data?.token;
+      if (!accessToken) {
+        throw new Error('Invalid auth response: missing access token');
+      }
+      setToken(accessToken);
       setUser(data.user);
-      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('authToken', accessToken);
       localStorage.setItem('authUser', JSON.stringify(data.user));
 
       return data;
@@ -119,7 +137,7 @@ export function AuthProvider({ children }) {
 
   const signOut = async () => {
     try {
-      await fetch(`${API_URL}/auth/signout`, {
+      await fetch(`${API_URL}/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

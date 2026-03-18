@@ -95,6 +95,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 ) => {
   try {
     console.log('Attempting signup with:', { email, displayName, age, gender });
+    const nameParts = (displayName || '').trim().split(/\s+/).filter(Boolean);
+    const firstName = nameParts[0] || 'User';
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
     // Add timeout
     const controller = new AbortController();
@@ -105,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password, displayName, age, gender }),
+      body: JSON.stringify({ email, password, displayName, firstName, lastName, age, gender }),
       signal: controller.signal,
     });
 
@@ -126,12 +129,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await response.json();
     console.log('Server response:', data);
 
-    if (!data.user || !data.token) {
+    const accessToken = data?.tokens?.accessToken || data?.token;
+
+    if (!data.user || !accessToken) {
       console.error('Invalid response structure:', data);
       throw new Error('Invalid response from server');
     }
 
-    const sessionData = { user: data.user, token: data.token };
+    const sessionData = { user: data.user, token: accessToken };
     await AsyncStorage.setItem('authSession', JSON.stringify(sessionData));
     setSession(sessionData);
     setUser(data.user);
@@ -167,7 +172,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const data = await response.json();
-      const sessionData = { user: data.user, token: data.token };
+      const accessToken = data?.tokens?.accessToken || data?.token;
+      if (!accessToken) {
+        throw new Error('Invalid response from server: missing access token');
+      }
+      const sessionData = { user: data.user, token: accessToken };
       await AsyncStorage.setItem('authSession', JSON.stringify(sessionData));
       setSession(sessionData);
       setUser(data.user);
@@ -182,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = session?.token;
       if (token) {
-        await fetch(`${API_URL}/auth/signout`, {
+        await fetch(`${API_URL}/auth/logout`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -244,7 +253,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const tokenData = await tokenResponse.json();
-      const sessionData = { user: tokenData.user, token: tokenData.token };
+      const accessToken = tokenData?.tokens?.accessToken || tokenData?.token;
+      if (!accessToken) {
+        throw new Error('Google auth response missing access token');
+      }
+      const sessionData = { user: tokenData.user, token: accessToken };
       await AsyncStorage.setItem('authSession', JSON.stringify(sessionData));
       setSession(sessionData);
       setUser(tokenData.user);

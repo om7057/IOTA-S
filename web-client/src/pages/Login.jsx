@@ -57,11 +57,16 @@ const Login = () => {
 
       const data = await response.json();
       console.log("OAuth success, user:", data.user);
+      const accessToken = data?.tokens?.accessToken || data?.token;
+      const refreshToken = data?.tokens?.refreshToken || data?.refreshToken;
+      if (!accessToken) {
+        throw new Error("Invalid auth response: missing access token");
+      }
       
-      localStorage.setItem("authToken", data.token);
+      localStorage.setItem("authToken", accessToken);
       localStorage.setItem("authUser", JSON.stringify(data.user));
-      if (data.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken);
       }
       
       toast.success("Signed in with Google! Let's set up your profile...");

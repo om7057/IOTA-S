@@ -19,11 +19,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
-NODE_BACKEND_URL = "http://localhost:5000"
+NODE_BACKEND_URL = os.getenv("NODE_BACKEND_URL", "http://localhost:3000")
 
 # Models
 class StoryOption(BaseModel):

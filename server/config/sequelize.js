@@ -10,7 +10,7 @@ const dbConfig = {
     port: environment.DB.port,
     dialect: 'postgres',
     pool: environment.DB.pool,
-    logging: environment.isDevelopment() ? console.log : false,
+    logging: false, // Disable verbose SQL query logging
     define: {
       timestamps: true,
       underscored: false,

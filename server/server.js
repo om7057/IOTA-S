@@ -1,15 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import http from 'http';
-import { Server as SocketIOServer } from 'socket.io';
 import environment from './config/environment.js';
 import { logger } from './utils/logger.js';
 import { connectDB } from './models/index.js';
 import { requestLogger, errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import initializeSocketEvents from './socket/events.js';
-import PresenceTracker from './socket/presenceTracker.js';
-import NotificationService from './socket/notificationService.js';
-import TypingIndicator from './socket/typingIndicator.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import moodRoutes from './routes/moods.js';
@@ -33,31 +27,6 @@ import forumsRoutes from './routes/forums.js';
 import socialRoutes from './routes/social.js';
 
 const app = express();
-
-// ==================== Socket.io Setup ====================
-const server = http.createServer(app);
-const io = new SocketIOServer(server, {
-  cors: {
-    origin: environment.CORS_ORIGIN,
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
-  transports: ['websocket', 'polling'],
-});
-
-// Initialize Socket.io services
-const presenceTracker = new PresenceTracker(io);
-const notificationService = new NotificationService(io);
-const typingIndicator = new TypingIndicator(io);
-
-// Make services globally available
-global.io = io;
-global.presenceTracker = presenceTracker;
-global.notificationService = notificationService;
-global.typingIndicator = typingIndicator;
-
-// Initialize Socket.io event handlers
-initializeSocketEvents(io);
 
 // Request logging
 app.use(requestLogger);
@@ -150,12 +119,12 @@ const startServer = async () => {
     logger.info('Connecting to database...');
     await connectDB();
 
-    // Start server with Socket.io
-    server.listen(environment.PORT, () => {
+    // Start plain HTTP API server (websocket disabled)
+    app.listen(environment.PORT, () => {
       logger.info(`🚀 Server running on port ${environment.PORT}`, {
         environment: environment.NODE_ENV,
         apiUrl: environment.API_URL,
-        socketio: 'enabled',
+        socketio: 'disabled',
       });
     });
   } catch (error) {
