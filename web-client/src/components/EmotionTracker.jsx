@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import PropTypes from "prop-types";
-import { useEmotionDetection } from "./useEmotionDetection";
+import useEmotionDetection from "./useEmotionDetection";
 
 const EmotionTracker = ({ userId, storyId, quizActive, onEmotionDataUpdate }) => {
   const { videoRef, emotionTimeline, loading } = useEmotionDetection(quizActive);

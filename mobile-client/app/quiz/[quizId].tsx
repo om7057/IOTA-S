@@ -9,9 +9,16 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { CameraView } from 'expo-camera';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URL } from '../../constants';
 import { Ionicons } from '@expo/vector-icons';
+import useEnhancedEmotionDetection from '../../hooks/useEnhancedEmotionDetection';
+import {
+  EMOTION_EMOJIS,
+  generateEmotionReport,
+  type EmotionReport,
+} from '../../utils/emotionReport';
 
 type Question = {
   id: string;
@@ -39,12 +46,43 @@ export default function QuizScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [emotionReport, setEmotionReport] = useState<EmotionReport | null>(null);
+  const [cameraCollapsed, setCameraCollapsed] = useState(false);
+
+  const {
+    cameraRef,
+    detectedMood,
+    confidence,
+    emotionTimeline,
+    isDetecting,
+    faceDetected,
+    requestCamera,
+    startDetection,
+    stopDetection,
+  } = useEnhancedEmotionDetection();
 
   useEffect(() => {
     if (session?.token && quizId) {
       fetchQuiz();
     }
   }, [session?.token, quizId]);
+
+  useEffect(() => {
+    const startEmotionTracking = async () => {
+      if (!session?.token || !quizId || submitted) return;
+
+      const hasAccess = await requestCamera();
+      if (hasAccess && !isDetecting) {
+        startDetection();
+      }
+    };
+
+    startEmotionTracking();
+
+    return () => {
+      stopDetection();
+    };
+  }, [session?.token, quizId, submitted, requestCamera, startDetection, stopDetection, isDetecting]);
 
   const fetchQuiz = async () => {
     try {
@@ -107,13 +145,20 @@ export default function QuizScreen() {
 
     setSubmitting(true);
     try {
+      const generatedReport = generateEmotionReport(emotionTimeline);
+      setEmotionReport(generatedReport);
+
       const response = await fetch(`${API_URL}/quizzes/${quizId}/submit`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({
+          answers,
+          emotionReport: generatedReport,
+          emotionTimeline,
+        }),
       });
 
       if (!response.ok) {
@@ -121,8 +166,27 @@ export default function QuizScreen() {
       }
 
       const data = await response.json();
-      setResult(data);
+      const payload = data?.data || data;
+      const scoredAnswers = payload?.progress?.answers || {};
+      const correctCount = Object.values(scoredAnswers).filter((item: any) => item?.correct).length;
+      const totalQuestions = quiz?.questions?.length || Object.keys(answers).length || 0;
+      const scorePercentage =
+        typeof payload?.scorePercentage === 'number'
+          ? payload.scorePercentage
+          : totalQuestions > 0
+            ? Math.round((correctCount / totalQuestions) * 100)
+            : 0;
+
+      setResult({
+        ...payload,
+        correctCount,
+        totalQuestions,
+        scorePercentage,
+        passed: typeof payload?.passed === 'boolean' ? payload.passed : scorePercentage >= 60,
+        emotionReport: generatedReport,
+      });
       setSubmitted(true);
+      stopDetection();
     } catch (error) {
       console.error('Error submitting quiz:', error);
       Alert.alert('Error', 'Failed to submit quiz');
@@ -151,8 +215,9 @@ export default function QuizScreen() {
 
   if (submitted && result) {
     // Results Screen
-    const percentage = (result.correctCount / result.totalQuestions) * 100;
-    const isPassing = percentage >= 60;
+    const percentage = result.scorePercentage || 0;
+    const isPassing = result.passed;
+    const reportToShow = result.emotionReport || emotionReport;
 
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.resultsContainer}>
@@ -182,6 +247,56 @@ export default function QuizScreen() {
             </Text>
           </View>
         </View>
+
+        {reportToShow && (
+          <View style={styles.emotionReportCard}>
+            <Text style={styles.emotionReportTitle}>Emotion Report</Text>
+
+            <View style={styles.emotionReportHeader}>
+              <Text style={styles.emotionReportEmoji}>
+                {EMOTION_EMOJIS[reportToShow.dominantEmotion] || '😊'}
+              </Text>
+              <View>
+                <Text style={styles.emotionReportLabel}>Dominant Emotion</Text>
+                <Text style={styles.emotionReportValue}>{reportToShow.dominantEmotion}</Text>
+              </View>
+            </View>
+
+            <View style={styles.emotionMetricRow}>
+              <View style={styles.emotionMetricBox}>
+                <Text style={styles.emotionMetricNumber}>{reportToShow.totalDetections}</Text>
+                <Text style={styles.emotionMetricText}>Detections</Text>
+              </View>
+              <View style={styles.emotionMetricBox}>
+                <Text style={styles.emotionMetricNumber}>{reportToShow.emotionTransitions}</Text>
+                <Text style={styles.emotionMetricText}>Shifts</Text>
+              </View>
+              <View style={styles.emotionMetricBox}>
+                <Text style={styles.emotionMetricNumber}>{reportToShow.engagementLevel}</Text>
+                <Text style={styles.emotionMetricText}>Engagement</Text>
+              </View>
+            </View>
+
+            {reportToShow.distribution.slice(0, 3).map((item: any) => (
+              <View key={item.emotion} style={styles.distributionRow}>
+                <View style={styles.distributionLabelWrap}>
+                  <Text style={styles.distributionEmoji}>{EMOTION_EMOJIS[item.emotion] || '😐'}</Text>
+                  <Text style={styles.distributionLabel}>{item.emotion}</Text>
+                </View>
+                <Text style={styles.distributionValue}>{item.percentage}%</Text>
+              </View>
+            ))}
+
+            {reportToShow.insights?.length > 0 && (
+              <View style={styles.insightsBlock}>
+                <Text style={styles.insightsTitle}>Insights</Text>
+                {reportToShow.insights.slice(0, 2).map((insight: string, idx: number) => (
+                  <Text key={idx} style={styles.insightText}>• {insight}</Text>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={styles.detailsCard}>
           <Text style={styles.detailsTitle}>Quiz Details</Text>
@@ -218,6 +333,36 @@ export default function QuizScreen() {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.quizContent} contentContainerStyle={styles.quizContentInner}>
+        <View style={styles.trackerCard}>
+          <View style={styles.trackerHeader}>
+            <Text style={styles.trackerTitle}>Facial Emotion Tracking</Text>
+            <TouchableOpacity onPress={() => setCameraCollapsed((prev) => !prev)}>
+              <Ionicons name={cameraCollapsed ? 'chevron-down' : 'chevron-up'} size={20} color="#4b7bec" />
+            </TouchableOpacity>
+          </View>
+
+          {!cameraCollapsed && (
+            <>
+              <View style={styles.cameraPreviewWrap}>
+                <CameraView ref={cameraRef} style={styles.cameraPreview} facing="front" />
+                <View style={styles.liveBadge}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.liveText}>LIVE</Text>
+                </View>
+              </View>
+              <View style={styles.trackerFooter}>
+                <Text style={styles.currentEmotionText}>
+                  {faceDetected ? `${EMOTION_EMOJIS[detectedMood || 'neutral'] || '😐'} ${detectedMood}` : 'Scanning face...'}
+                </Text>
+                <Text style={styles.confidenceText}>
+                  {faceDetected ? `${confidence}%` : '--'}
+                </Text>
+              </View>
+              <Text style={styles.samplesText}>Samples captured: {emotionTimeline.length}</Text>
+            </>
+          )}
+        </View>
+
         {/* Header */}
         <View style={styles.headerSection}>
           <Text style={styles.quizTitle}>{quiz.title}</Text>
@@ -354,6 +499,80 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     marginBottom: 20,
+  },
+  trackerCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+  },
+  trackerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  trackerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e3a8a',
+  },
+  cameraPreviewWrap: {
+    height: 160,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    marginBottom: 10,
+    position: 'relative',
+  },
+  cameraPreview: {
+    flex: 1,
+  },
+  liveBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#ef4444',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#fff',
+  },
+  liveText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  trackerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  currentEmotionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1f2937',
+    textTransform: 'capitalize',
+  },
+  confidenceText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563eb',
+  },
+  samplesText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#6b7280',
   },
   quizTitle: {
     fontSize: 24,
@@ -571,5 +790,102 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  emotionReportCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#e0e7ff',
+  },
+  emotionReportTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 10,
+  },
+  emotionReportHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  emotionReportEmoji: {
+    fontSize: 36,
+  },
+  emotionReportLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  emotionReportValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    textTransform: 'capitalize',
+  },
+  emotionMetricRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    gap: 8,
+  },
+  emotionMetricBox: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  emotionMetricNumber: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1d4ed8',
+  },
+  emotionMetricText: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  distributionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  distributionLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  distributionEmoji: {
+    fontSize: 18,
+  },
+  distributionLabel: {
+    fontSize: 14,
+    color: '#374151',
+    textTransform: 'capitalize',
+  },
+  distributionValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  insightsBlock: {
+    marginTop: 8,
+    backgroundColor: '#fefce8',
+    borderRadius: 8,
+    padding: 10,
+  },
+  insightsTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#854d0e',
+    marginBottom: 4,
+  },
+  insightText: {
+    fontSize: 12,
+    color: '#374151',
+    lineHeight: 18,
   },
 });

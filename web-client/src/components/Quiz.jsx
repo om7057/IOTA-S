@@ -1,118 +1,111 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Lightbulb, ChevronLeft, ChevronRight, Check, Trophy, Award, BarChart3, BookOpen } from "lucide-react";
 
 const Quiz = () => {
-  const { storyId } = useParams();
-  const { user, token } = useAuth();
+  const { quizId } = useParams();
+  const { token } = useAuth();
   const navigate = useNavigate();
-  const [quizList, setQuizList] = useState([]);
+  const [quiz, setQuiz] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
-  const [score, setScore] = useState(0);
-  const [storyMeta, setStoryMeta] = useState(null);
-  const [mongoUser, setMongoUser] = useState(null);
-
-  useEffect(() => {
-    const fetchMongoUser = async () => {
-      if (!user?.id) return;
-      try {
-        const res = await fetch(
-          `http://localhost:3000/api/users/${user.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const data = await res.json();
-        setMongoUser(data);
-      } catch (err) {
-        console.error("Failed to fetch Mongo user:", err);
-      }
-    };
-    fetchMongoUser();
-  }, [user?.id]);
+  const [result, setResult] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchQuiz = async () => {
+      if (!quizId) return;
       try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
         const response = await fetch(
-          `http://localhost:3000/api/quiz/story/${storyId}`
+          `${apiUrl}/quizzes/${quizId}`
         );
-        const data = await response.json();
-        setQuizList(Array.isArray(data) ? data : []);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch quiz');
+        }
+
+        const payload = await response.json();
+        setQuiz(payload?.data || null);
       } catch (err) {
         console.error("Error fetching quiz:", err);
       }
     };
 
-    const fetchStoryMeta = async () => {
-      try {
-        const res = await fetch(`http://localhost:3000/api/stories/${storyId}`);
-        const data = await res.json();
-        setStoryMeta(data);
-      } catch (err) {
-        console.error("Error fetching story meta:", err);
-      }
-    };
-
     fetchQuiz();
-    fetchStoryMeta();
-  }, [storyId]);
+  }, [quizId]);
 
-  const handleSelect = (quizId, option) => {
+  const questions = useMemo(() => {
+    const source = quiz?.questions || [];
+    return [...source].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+  }, [quiz]);
+
+  const handleSelect = (questionId, option) => {
     if (submitted) return;
-    setAnswers((prev) => ({ ...prev, [quizId]: option }));
+    setAnswers((prev) => ({ ...prev, [questionId]: option }));
   };
 
   const handleSubmit = async () => {
-    setSubmitted(true);
-
-    const correctAnswers = quizList.filter(
-      (quiz) => answers[quiz._id] === quiz.correctAnswer
-    );
-    const calculatedScore = correctAnswers.length;
-    setScore(calculatedScore);
-
-    if (!storyMeta || !mongoUser?._id) {
-      console.error("Missing storyMeta or mongoUser");
+    if (!token || !quizId) {
       return;
     }
 
+    if (questions.length && Object.keys(answers).length < questions.length) {
+      alert('Please answer all questions before submitting.');
+      return;
+    }
+
+    setSubmitting(true);
+
     try {
-      const progressPayload = {
-        userId: mongoUser._id,
-        story: storyId,
-        score: calculatedScore,
-        totalQuestions: quizList.length,
-        topic: storyMeta.topic?._id,
-        level: storyMeta.level?._id,
-        answers: quizList.map((quiz) => ({
-          quizId: quiz._id,
-          selectedAnswer: answers[quiz._id] || null,
-          isCorrect: answers[quiz._id] === quiz.correctAnswer,
-        })),
-      };
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
       const progressRes = await fetch(
-        "http://localhost:3000/api/quiz-progress",
+        `${apiUrl}/quizzes/${quizId}/submit`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(progressPayload),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            answers,
+          }),
         }
       );
 
       if (!progressRes.ok) throw new Error("Failed to save quiz progress");
 
-      console.log("✅ Quiz progress saved successfully!");
+      const payload = await progressRes.json();
+      const data = payload?.data || {};
+      const correctCount = Object.values(data?.progress?.answers || {}).filter((item) => item?.correct).length;
+
+      setResult({
+        ...data,
+        correctCount,
+        totalQuestions: questions.length,
+      });
+      setSubmitted(true);
     } catch (err) {
       console.error("Error saving quiz progress:", err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const currentQuiz = quizList[currentIndex];
-  const total = quizList.length;
+  const currentQuiz = questions[currentIndex];
+  const total = questions.length;
   const progress = total > 0 ? Math.round(((currentIndex + 1) / total) * 100) : 0;
+
+  if (!quiz) {
+    return (
+      <div className="max-w-3xl mx-auto card p-8 text-center">
+        <p className="text-gray-600">Loading quiz...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -121,7 +114,7 @@ const Quiz = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Quiz Time</h1>
-            <p className="text-gray-500 text-sm">{storyMeta?.title || 'Test your knowledge'}</p>
+            <p className="text-gray-500 text-sm">{quiz?.title || 'Test your knowledge'}</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
             <Lightbulb className="w-6 h-6" />
@@ -146,15 +139,16 @@ const Quiz = () => {
                 {/* Question Card */}
                 <div className="bg-slate-50 rounded-2xl p-6 mb-6">
                   <p className="text-xl font-semibold text-gray-900 mb-6">
-                    {currentQuiz.question}
+                    {currentQuiz.prompt || currentQuiz.question}
                   </p>
                   <div className="space-y-3">
-                    {currentQuiz.options.map((option, idx) => {
-                      const isSelected = answers[currentQuiz._id] === option;
+                    {(Array.isArray(currentQuiz.options) ? currentQuiz.options : []).map((option, idx) => {
+                      const questionId = currentQuiz.id;
+                      const isSelected = answers[questionId] === option;
                       return (
                         <button
                           key={idx}
-                          onClick={() => handleSelect(currentQuiz._id, option)}
+                          onClick={() => handleSelect(questionId, option)}
                           className={`w-full p-4 rounded-xl text-left transition-all duration-200 flex items-center gap-4 ${
                             isSelected
                               ? "bg-white border-2 border-sky-500 shadow-sm"
@@ -195,10 +189,10 @@ const Quiz = () => {
                   {currentIndex === total - 1 ? (
                     <button
                       onClick={handleSubmit}
-                      disabled={submitted}
+                      disabled={submitted || submitting}
                       className="btn bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
                     >
-                      Finish Quiz
+                      {submitting ? 'Submitting...' : 'Finish Quiz'}
                       <Check className="w-5 h-5 ml-2" />
                     </button>
                   ) : (
@@ -229,16 +223,16 @@ const Quiz = () => {
         )}
 
         {/* Results */}
-        {submitted && (
+        {submitted && result && (
           <div className="text-center py-8">
             <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center ${
-              score / total >= 0.8 
+              result.scorePercentage / 100 >= 0.8 
                 ? 'bg-amber-100 text-amber-600' 
-                : score / total >= 0.5 
+                : result.scorePercentage / 100 >= 0.5 
                   ? 'bg-sky-100 text-sky-600'
                   : 'bg-gray-100 text-gray-600'
             }`}>
-              {score / total >= 0.8 ? (
+              {result.scorePercentage / 100 >= 0.8 ? (
                 <Trophy className="w-10 h-10" />
               ) : (
                 <Award className="w-10 h-10" />
@@ -246,16 +240,16 @@ const Quiz = () => {
             </div>
             
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              {score} / {total}
+              {result.correctCount} / {result.totalQuestions}
             </h2>
             <p className="text-lg text-gray-600 mb-6">
-              {score / total >= 0.8
+              {result.scorePercentage / 100 >= 0.8
                 ? "Amazing job! You're a superstar!"
-                : score / total >= 0.5
+                : result.scorePercentage / 100 >= 0.5
                   ? "Good work! Keep learning!"
                   : "Nice try! Let's learn more!"}
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => navigate("/leaderboard")}

@@ -99,11 +99,13 @@ const AppContent = () => {
         <Route path="/resources" element={<ResourcesPage />} />
         <Route path="/mood" element={<MoodTracker onLoading={handleLoading} />} />
         <Route path="/levels" element={<Levels onLoading={handleLoading} />} />
-        <Route path="/quiz" element={<Quiz onLoading={handleLoading} />} />
+        <Route path="/quiz" element={<QuizLandingPage />} />
+        <Route path="/quiz/:quizId" element={<Quiz onLoading={handleLoading} />} />
         <Route path="/quiz-landing" element={<QuizLandingPage />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/live" element={<Live />} />
-        <Route path="/story/:id" element={<StoryPlayer />} />
+        <Route path="/story/:storyId" element={<StoryPlayer />} />
+        <Route path="/story-play/:storyId" element={<StoryPlayer />} />
         <Route path="/story-learning/:id" element={<StoryLearning />} />
         <Route path="/stories-list" element={<Stories />} />
         <Route path="/units/:topicId" element={<UnitsAndLessons />} />
