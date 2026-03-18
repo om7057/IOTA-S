@@ -314,11 +314,6 @@ export const connectDB = async () => {
     await sequelize.authenticate();
     console.log('✅ Database connection successful');
 
-    // Sync models (development only) - silent mode
-    if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ force: false, logging: false });
-    }
-
     return sequelize;
   } catch (error) {
     console.error('❌ Unable to connect to database:', error.message);
