@@ -54,9 +54,9 @@ const Leaderboard = () => {
     const fetchLeaderboard = async () => {
       setIsLoading(true);
       try {
-        let url = "http://localhost:5000/api/leaderboard";
+        let url = "http://localhost:3000/api/leaderboard";
         if (selectedStory) {
-          url = `http://localhost:5000/api/leaderboard/story/${selectedStory}`;
+          url = `http://localhost:3000/api/leaderboard/story/${selectedStory}`;
         }
 
         console.log(`📢 Fetching leaderboard for story: ${selectedStory || "All"}`);

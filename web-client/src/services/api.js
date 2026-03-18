@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api"; // Update if backend is hosted
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export const fetchTopics = async () => {
   const res = await fetch(`${API_URL}/topics`);

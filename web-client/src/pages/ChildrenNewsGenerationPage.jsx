@@ -59,9 +59,13 @@ const ChildrenNewsGenerationPage = () => {
       const story = await genResponse.json();
 
       // Save to database
+      const authToken = localStorage.getItem('authToken');
       const saveResponse = await fetch(`${API_URL}/news-stories`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           title: story.title,
           description: `Generated from news article at ${new Date().toLocaleDateString()}`,

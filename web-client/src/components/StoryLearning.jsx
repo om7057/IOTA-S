@@ -9,7 +9,7 @@ const StoryLearning = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch("http://localhost:5000/api/topics")
+    fetch("http://localhost:3000/api/topics")
       .then((res) => res.json())
       .then((data) => {
         setTopics(data);

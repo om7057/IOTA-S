@@ -180,6 +180,54 @@ CREATE TABLE IF NOT EXISTS leaderboards (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create discussions table
+CREATE TABLE IF NOT EXISTS discussions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  creator_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  title VARCHAR(200) NOT NULL,
+  content TEXT NOT NULL,
+  is_pinned BOOLEAN DEFAULT FALSE,
+  is_closed BOOLEAN DEFAULT FALSE,
+  reply_count INT DEFAULT 0,
+  like_count INT DEFAULT 0,
+  view_count INT DEFAULT 0,
+  last_activity_at TIMESTAMP,
+  tags JSONB DEFAULT '[]'::jsonb,
+  metadata JSONB,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create discussion_replies table
+CREATE TABLE IF NOT EXISTS discussion_replies (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  discussion_id UUID NOT NULL REFERENCES discussions(id) ON DELETE CASCADE,
+  creator_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  parent_reply_id UUID REFERENCES discussion_replies(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  like_count INT DEFAULT 0,
+  is_edited BOOLEAN DEFAULT FALSE,
+  edited_at TIMESTAMP,
+  metadata JSONB,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create group_chats table
+CREATE TABLE IF NOT EXISTS group_chats (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  content TEXT NOT NULL,
+  type VARCHAR(50) DEFAULT 'text',
+  metadata JSONB,
+  is_edited BOOLEAN DEFAULT FALSE,
+  edited_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_moods_user_id ON moods(user_id);
 CREATE INDEX IF NOT EXISTS idx_moods_created_at ON moods(created_at);
@@ -192,3 +240,9 @@ CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
 CREATE INDEX IF NOT EXISTS idx_emotion_history_user_id ON emotion_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_quiz_progress_user_id ON quiz_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_leaderboards_user_id ON leaderboards(user_id);
+CREATE INDEX IF NOT EXISTS idx_discussions_group_id ON discussions(group_id);
+CREATE INDEX IF NOT EXISTS idx_discussions_creator_id ON discussions(creator_id);
+CREATE INDEX IF NOT EXISTS idx_discussion_replies_discussion_id ON discussion_replies(discussion_id);
+CREATE INDEX IF NOT EXISTS idx_discussion_replies_creator_id ON discussion_replies(creator_id);
+CREATE INDEX IF NOT EXISTS idx_group_chats_group_id ON group_chats(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_chats_sender_id ON group_chats(sender_id);

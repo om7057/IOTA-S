@@ -25,7 +25,7 @@ export const GroupChat = sequelize.define(
     },
     senderId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'users',
         key: 'id',

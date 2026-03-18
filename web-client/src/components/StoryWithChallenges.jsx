@@ -29,7 +29,7 @@ const StoryWithChallenges = () => {
   useEffect(() => {
     const fetchLesson = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/lessons/${lessonId}`);
+        const res = await fetch(`http://localhost:3000/api/lessons/${lessonId}`);
         if (!res.ok) throw new Error("Failed to fetch lesson");
         const data = await res.json();
         setLesson(data);
@@ -144,7 +144,7 @@ const StoryWithChallenges = () => {
     setSubmitting(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/challenges/${currentChallenge.id}/submit`,
+        `http://localhost:3000/api/challenges/${currentChallenge.id}/submit`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

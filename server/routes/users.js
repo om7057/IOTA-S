@@ -29,7 +29,7 @@ router.get('/me', verifyToken, userController.getCurrentUser);
  * GET /api/users/:userId
  * Get user profile by ID (public)
  * Params: userId - UUID of user
- * Returns: public profile fields (firstName, lastName, age, userType, avatarUrl, stars, joinedAt)
+ * Returns: public profile fields (firstName, lastName, displayName, userType, avatarUrl, stars, joinedAt)
  */
 router.get('/:userId', userController.getUserById);
 

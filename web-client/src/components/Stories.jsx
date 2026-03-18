@@ -10,7 +10,7 @@ const Stories = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch("http://localhost:5000/api/stories")
+    fetch("http://localhost:3000/api/stories")
       .then((res) => res.json())
       .then((data) => {
         const filtered = data.filter((story) => story.level?._id === levelId);

@@ -13,7 +13,7 @@ const ExpressionPage = () => {
   const [newPost, setNewPost] = useState({ title: '', content: '' });
   const [loading, setLoading] = useState(true);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
   // Only show for teenagers
   if (userType !== 'teenager' && age < 13) {

@@ -62,4 +62,10 @@ router.post('/google/callback', authController.handleGoogleCallback);
  */
 router.post('/logout', verifyToken, authController.logout);
 
+/**
+ * POST /api/auth/signout
+ * Backward-compatible alias for logout
+ */
+router.post('/signout', verifyToken, authController.logout);
+
 export default router;

@@ -5,7 +5,7 @@ import { Lightbulb, ChevronLeft, ChevronRight, Check, Trophy, Award, BarChart3, 
 
 const Quiz = () => {
   const { quizId } = useParams();
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [quiz, setQuiz] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);

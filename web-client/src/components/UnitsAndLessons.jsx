@@ -13,7 +13,7 @@ const UnitsAndLessons = () => {
   useEffect(() => {
     const fetchUnits = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/units/topic/${topicId}`);
+        const res = await fetch(`http://localhost:3000/api/units/topic/${topicId}`);
         if (!res.ok) throw new Error("Failed to fetch units");
         const data = await res.json();
         setUnits(data);

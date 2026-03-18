@@ -34,7 +34,7 @@ export const listUsers = async (req, res, next) => {
 
     // Get total count and paginated results
     const { count, rows } = await User.findAndCountAll({
-      attributes: ['id', 'email', 'firstName', 'lastName', 'displayName', 'age', 'userType', 'avatarUrl', 'currentStars'],
+      attributes: ['id', 'firstName', 'lastName', 'displayName', 'userType', 'avatarUrl', 'currentStars'],
       where: { deletedAt: null }, // Exclude soft-deleted users
       order: [[sortField, 'DESC']],
       limit: limitNum,
@@ -116,7 +116,7 @@ export const getUserById = async (req, res, next) => {
     }
 
     const user = await User.findByPk(userId, {
-      attributes: ['id', 'firstName', 'lastName', 'displayName', 'age', 'userType', 'avatarUrl', 'currentStars', 'createdAt'],
+      attributes: ['id', 'firstName', 'lastName', 'displayName', 'userType', 'avatarUrl', 'currentStars', 'createdAt'],
     });
 
     if (!user) {
