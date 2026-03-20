@@ -65,7 +65,7 @@ const ResourcesPage = () => {
     },
     {
       name: 'Cybertipline',
-      description: 'Report online exploitation or abuse',
+      description: 'Report harmful online behavior or digital safety concerns',
       icon: <ExternalLink className="w-6 h-6" />,
     },
   ];
@@ -141,7 +141,7 @@ const ResourcesPage = () => {
             },
             {
               q: 'What if I\'m experiencing cyberbullying?',
-              a: 'Document the abuse, block the person, and report it to the platform. You can also reach out to a trusted adult or our support team.',
+              a: 'Save evidence, block the person, and report it to the platform. You can also talk to a trusted adult or our support team for help.'
             },
           ].map((faq, idx) => (
             <details key={idx} className="bg-white rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors">

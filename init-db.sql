@@ -3237,6 +3237,75 @@ ALTER TABLE ONLY public.story_attempts
 
 
 --
+-- Name: enum_PsychiatristChat_sender; Type: TYPE; Schema: public; Owner: -
+--
+
+CREATE TYPE public."enum_PsychiatristChat_sender" AS ENUM (
+    'teen',
+    'psychiatrist'
+);
+
+
+--
+-- Name: psychiatrists; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.psychiatrists (
+    id uuid NOT NULL,
+    "firstName" character varying(255) NOT NULL,
+    "lastName" character varying(255) NOT NULL,
+    specialization text,
+    bio text,
+    "avatarUrl" character varying(500),
+    email character varying(255),
+    "isAvailable" boolean DEFAULT true,
+    "responseTimeAvg" integer DEFAULT 0,
+    rating numeric(3,2) DEFAULT 4.5,
+    "totalConsultations" integer DEFAULT 0,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone,
+    PRIMARY KEY (id)
+);
+
+
+--
+-- Name: psychiatrist_chats; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.psychiatrist_chats (
+    id uuid NOT NULL,
+    "conversationId" uuid NOT NULL,
+    "userId" uuid NOT NULL,
+    "psychiatristId" uuid NOT NULL,
+    message text NOT NULL,
+    sender public."enum_PsychiatristChat_sender" NOT NULL,
+    sentiment character varying(50) DEFAULT 'neutral',
+    "isRead" boolean DEFAULT false,
+    "createdAt" timestamp with time zone NOT NULL,
+    "updatedAt" timestamp with time zone NOT NULL,
+    "deletedAt" timestamp with time zone,
+    PRIMARY KEY (id)
+);
+
+
+--
+-- Name: psychiatrist_chats psychiatrist_chats_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.psychiatrist_chats
+    ADD CONSTRAINT "psychiatrist_chats_userId_fkey" FOREIGN KEY ("userId") REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: psychiatrist_chats psychiatrist_chats_psychiatristId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.psychiatrist_chats
+    ADD CONSTRAINT "psychiatrist_chats_psychiatristId_fkey" FOREIGN KEY ("psychiatristId") REFERENCES public.psychiatrists(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
 -- PostgreSQL database dump complete
 --
 

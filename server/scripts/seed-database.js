@@ -11,6 +11,9 @@ import { seedGroups } from '../seeds/groups.js';
 import { seedChildrenCourses } from '../seeds/children-courses.js';
 import { seedNewsStories } from '../seeds/news-stories.js';
 import { seedStoryAttempts } from '../seeds/story-attempts.js';
+import seedPsychiatrists from '../seeds/psychiatrists.js';
+import { seedPosts } from '../seeds/posts.js';
+import { seedJournals } from '../seeds/journals.js';
 import { sequelize } from '../config/sequelize.js';
 
 config();
@@ -22,6 +25,12 @@ const main = async () => {
     // Verify database connection
     await sequelize.authenticate();
     console.log('✅ Database connection verified');
+
+    // Auto-create all tables from Sequelize models if they don't exist.
+    // This ensures seeding works on a fresh DB (e.g. after docker compose down -v).
+    console.log('\n📦 Ensuring database schema...');
+    await sequelize.sync();
+    console.log('✅ Database schema ready');
 
     // Run seed functions
     console.log('\n📚 Seeding stories...');
@@ -41,6 +50,15 @@ const main = async () => {
     
     console.log('\n🎯 Seeding story attempts (child quiz tracking)...');
     await seedStoryAttempts();
+    
+    console.log('\n🧑‍⚕️ Seeding psychiatrists (teen mental health support)...');
+    await seedPsychiatrists();
+    
+    console.log('\n💬 Seeding social feed posts (teen community)...');
+    await seedPosts();
+    
+    console.log('\n📔 Seeding journal entries (teen self-reflection)...');
+    await seedJournals();
     
     console.log('\n✅ Database seeding complete!');
     process.exit(0);

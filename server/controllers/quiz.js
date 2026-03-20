@@ -6,9 +6,11 @@ import {
   UserStoryProgress,
   Story,
 } from '../models/index.js';
+import { v4 as uuidv4 } from 'uuid';
 import { User } from '../models/index.js';
 import { Op } from 'sequelize';
 import { logger } from '../utils/logger.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
 
 /**
  * Save generated quiz with questions to database
@@ -766,17 +768,41 @@ export const getUserQuizStats = async (req, res) => {
       });
     }
 
-    const stats = await QuizProgress.findAll({
-      where: { userId },
-      include: [
-        {
-          model: Quiz,
-          as: 'quiz',
-          attributes: ['id', 'title', 'category', 'difficultyLevel'],
-        },
-      ],
-      order: [['completedAt', 'DESC']],
-    });
+    let stats = [];
+
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      stats = await db
+        .collection('quiz_progresses')
+        .find({ userId })
+        .sort({ completedAt: -1 })
+        .toArray();
+
+      const quizIds = [...new Set(stats.map((s) => s.quizId).filter(Boolean))];
+      const quizzes = await db
+        .collection('quizzes')
+        .find({ id: { $in: quizIds } })
+        .project({ _id: 0, id: 1, title: 1, category: 1, difficultyLevel: 1 })
+        .toArray();
+
+      const quizById = new Map(quizzes.map((quiz) => [quiz.id, quiz]));
+      stats = stats.map((attempt) => ({
+        ...attempt,
+        quiz: quizById.get(attempt.quizId) || null,
+      }));
+    } else {
+      stats = await QuizProgress.findAll({
+        where: { userId },
+        include: [
+          {
+            model: Quiz,
+            as: 'quiz',
+            attributes: ['id', 'title', 'category', 'difficultyLevel'],
+          },
+        ],
+        order: [['completedAt', 'DESC']],
+      });
+    }
 
     const quizzesCompleted = new Set(stats.map(s => s.quizId)).size;
     const totalPoints = stats.reduce((sum, s) => sum + s.pointsEarned, 0);
@@ -840,6 +866,46 @@ async function resolveQuizUserId(authUser) {
   const authEmail = authUser?.email;
 
   if (!authId && !authEmail) {
+    return null;
+  }
+
+  if (isMongoPrimaryEnabled()) {
+    const db = getMongoDb();
+    const usersCollection = db.collection('users');
+
+    if (authId && isUuid(authId)) {
+      const byId = await usersCollection.findOne({ id: authId, deletedAt: null });
+      if (byId) {
+        return byId.id;
+      }
+    }
+
+    if (authEmail) {
+      const normalizedEmail = String(authEmail).toLowerCase();
+      const byEmail = await usersCollection.findOne({ email: normalizedEmail, deletedAt: null });
+
+      if (byEmail) {
+        return byEmail.id;
+      }
+
+      const created = {
+        id: authId && isUuid(authId) ? authId : uuidv4(),
+        email: normalizedEmail,
+        firstName: 'Learner',
+        lastName: '',
+        oauthProvider: 'local',
+        userType: 'teenager',
+        currentStars: 0,
+        isVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+
+      await usersCollection.insertOne(created);
+      return created.id;
+    }
+
     return null;
   }
 

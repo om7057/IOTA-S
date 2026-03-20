@@ -113,9 +113,9 @@ async def get_story_by_id(story_id: str):
 # --- Helper Functions ---
 def get_topic_id(topic_name: str) -> str:
     topic_mapping = {
-        "Child Abuse": "6421a2fc5e7b4b5a8d3f9e7e",
-        "Sexual Exploitation": "6421a2fc5e7b4b5a8d3f9e7f",
-        "Online Exploitation": "6421a2fc5e7b4b5a8d3f9e80",
+        "Child Safety": "6421a2fc5e7b4b5a8d3f9e7e",
+        "Bad Touch Awareness": "6421a2fc5e7b4b5a8d3f9e7f",
+        "Online Safety": "6421a2fc5e7b4b5a8d3f9e80",
         "Cyberbullying": "6421a2fc5e7b4b5a8d3f9e81",
         "Child Labour": "6421a2fc5e7b4b5a8d3f9e82",
         "Child Marriage": "6421a2fc5e7b4b5a8d3f9e83",
@@ -129,12 +129,12 @@ def get_topic_id(topic_name: str) -> str:
 
 def categorize_article(article):
     text = f"{article['title']} {article.get('description', '')}".lower()
-    if "abuse" in text:
-        return "Child Abuse"
+    if "abuse" in text or "bad touch" in text:
+        return "Child Safety"
     elif "sex" in text or "exploit" in text:
-        return "Sexual Exploitation"
+        return "Bad Touch Awareness"
     elif "cyber" in text or "online" in text:
-        return "Online Exploitation"
+        return "Online Safety"
     elif "bully" in text:
         return "Cyberbullying"
     elif "labour" in text:
@@ -196,12 +196,12 @@ def get_demo_articles():
         {
             "title": "Online Safety: Protecting Children from Digital Threats",
             "description": "Expert guide on teaching children to recognize phishing and suspicious online behavior.",
-            "content": "Cybersecurity experts warn parents about increasing online exploitation of children and recommend digital literacy programs.",
+            "content": "Cybersecurity experts warn parents about increasing online dangers to children and recommend digital literacy programs.",
             "source": "TechSafety Daily"
         },
         {
             "title": "Child Labour Awareness Day: Rights and Protection",
-            "description": "Global movement highlights the importance of education over exploitation.",
+            "description": "Global movement highlights the importance of education and child protection.",
             "content": "Organizations worldwide are raising awareness about child labor and promoting access to safe education for all children.",
             "source": "UN News"
         },

@@ -1,9 +1,25 @@
 import { Badge, UserAchievement, User } from '../models/index.js';
 import { logger } from '../utils/logger.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Get all available badges
  */
+
+/**
+ * Helper: Get badge metadata
+ */
+function getBadgeMetadata(badgeId) {
+  const badges = {
+    'first-story': { name: 'Story Starter', icon: '📖', points: 10 },
+    'perfect-lesson': { name: 'Perfect Lesson', icon: '💯', points: 25 },
+    'social-butterfly': { name: 'Social Butterfly', icon: '🦋', points: 15 },
+    'streak-7': { name: 'Week Warrior', icon: '🔥', points: 50 },
+  };
+  return badges[badgeId] || { name: 'Achievement', icon: '🏆', points: 5 };
+}
+
 export const getAllBadges = async (req, res) => {
   try {
     const badges = await Badge.findAll({

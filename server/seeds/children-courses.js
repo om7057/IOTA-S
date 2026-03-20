@@ -83,11 +83,11 @@ export const seedChildrenCourses = async () => {
     await ChildrenProgress.destroy({ where: {}, force: true });
     await ChildrenCourse.destroy({ where: {}, force: true });
 
-    // ==================== COURSE 1: Sexual Abuse Awareness ====================
-    const sexualAbuseCourse = await ChildrenCourse.create({
-      title: 'Sexual Abuse Awareness',
+    // ==================== COURSE 1: Body Safety & Boundaries ====================
+    const bodySafetyCourse = await ChildrenCourse.create({
+      title: 'Body Safety & Boundaries',
       description: 'Learn trusted-adult rules and body safety through interactive story choices.',
-      imageSrc: '/child_abuse.svg',
+      imageSrc: '/body_safety.svg',
       icon: 'SAFE',
       ageGroup: '8-10',
       category: 'body-safety',
@@ -96,8 +96,8 @@ export const seedChildrenCourses = async () => {
       order: 1,
     });
 
-    const sexualAbuseUnit = await ChildrenUnit.create({
-      courseId: sexualAbuseCourse.id,
+    const bodySafetyUnit = await ChildrenUnit.create({
+      courseId: bodySafetyCourse.id,
       title: 'Trusted Adults and Safety',
       description: 'Interactive story for safe decisions with strangers and adults.',
       icon: 'UNIT',
@@ -106,7 +106,7 @@ export const seedChildrenCourses = async () => {
     });
 
     await createBranchingLesson({
-      unitId: sexualAbuseUnit.id,
+      unitId: bodySafetyUnit.id,
       title: 'Arav and the Stranger Offer - Complete Story',
       description: 'A complete interactive story showing safe choices and their outcomes.',
       content:
@@ -425,7 +425,7 @@ export const seedChildrenCourses = async () => {
           key: 'a6_emergency_contacts',
           order: 6,
           imageSrc: '/a6.jpg',
-          question: 'SCENE 6 - EMERGENCY RESOURCES: Arav now knows who to call in emergencies!\n\nWhich number should children in India call if they are unsafe, hurt, or being abused?',
+          question: 'SCENE 6 - EMERGENCY RESOURCES: Arav now knows who to call in emergencies!\n\nWhich number should children in India call if they are unsafe, hurt, or being treated badly?',
           hint: 'This is India\'s official child helpline. Trained counselors answer 24/7.',
           options: [
             {
@@ -722,11 +722,11 @@ export const seedChildrenCourses = async () => {
       ],
     });
 
-    // ==================== COURSE 4: Online Exploitation ====================
+    // ==================== COURSE 4: Online Safety ====================
     const onlineSafetyCourse = await ChildrenCourse.create({
-      title: 'Online Exploitation Awareness',
+      title: 'Online Safety Awareness',
       description: 'Practice safe digital choices in interactive situations.',
-      imageSrc: '/online_exploitation.svg',
+      imageSrc: '/online_safety.svg',
       icon: 'WEB',
       ageGroup: '8-10',
       category: 'general',
@@ -832,7 +832,7 @@ export const seedChildrenCourses = async () => {
         {
           key: 'online_done',
           order: 4,
-          imageSrc: '/online_exploitation.svg',
+          imageSrc: '/online_safety.svg',
           question: 'Story complete: What is the best online safety habit?',
           hint: 'Think: pause, verify, report.',
           options: [

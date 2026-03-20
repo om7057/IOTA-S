@@ -24,8 +24,8 @@ const StoryLearning = () => {
   // Topic icons mapping
   const getTopicIcon = (topicName) => {
     const name = topicName?.toLowerCase() || "";
-    if (name.includes("abuse")) return <Shield className="w-8 h-8" />;
-    if (name.includes("exploitation")) return <Scale className="w-8 h-8" />;
+    if (name.includes("body") || name.includes("bad touch")) return <Shield className="w-8 h-8" />;
+    if (name.includes("online")) return <Scale className="w-8 h-8" />;
     if (name.includes("labour") || name.includes("labor")) return <Briefcase className="w-8 h-8" />;
     if (name.includes("rights")) return <Hand className="w-8 h-8" />;
     if (name.includes("safety") || name.includes("online")) return <Lock className="w-8 h-8" />;

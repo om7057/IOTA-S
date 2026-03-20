@@ -1,8 +1,21 @@
 import { Post, Comment, User, Group } from '../models/index.js';
 import { Op } from 'sequelize';
 import { sequelize } from '../models/index.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 // Get social feed (posts from user's groups)
+
+/**
+ * Helper: Resolve teen display name  
+ */
+function getTeenName(userId) {
+  if (userId && userId !== 'ANONYMOUS' && !userId.startsWith('Teen#')) {
+    return userId;
+  }
+  return 'Teen#' + Math.random().toString(36).substr(2, 9).toUpperCase();
+}
+
 export const getSocialFeed = async (req, res) => {
   try {
     const { userId } = req.params;

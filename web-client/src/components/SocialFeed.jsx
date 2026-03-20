@@ -12,7 +12,7 @@ const SocialFeed = ({ embedded = false }) => {
   const [newPostContent, setNewPostContent] = useState('');
   const [postTitle, setPostTitle] = useState('');
   const [postCategory, setPostCategory] = useState('other');
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(true); // Always true - users cannot change this for safety
   const [expandedComments, setExpandedComments] = useState({});
   const [newComments, setNewComments] = useState({});
 
@@ -167,13 +167,8 @@ const SocialFeed = ({ embedded = false }) => {
                   <option value="other">Other</option>
                 </select>
 
-                <label className="anonymous-toggle">
-                  <input
-                    type="checkbox"
-                    checked={isAnonymous}
-                    onChange={(e) => setIsAnonymous(e.target.checked)}
-                  />
-                  <span>🔒 Post Anonymously</span>
+                <label className="anonymous-toggle anonymous-always">
+                  🔒 <span>Posted Anonymously</span>
                 </label>
               </div>
 

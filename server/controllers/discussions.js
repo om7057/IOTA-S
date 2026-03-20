@@ -1,4 +1,6 @@
 import { Discussion, DiscussionReply, Group, User, Like, GroupMember } from '../models/index.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Create discussion thread

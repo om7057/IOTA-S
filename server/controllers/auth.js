@@ -9,11 +9,30 @@ import { validators } from '../utils/validators.js';
 import { User } from '../models/User.js';
 import { RefreshToken } from '../models/RefreshToken.js';
 import { Op } from 'sequelize';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
 
 /**
  * Auth Controller
  * Handles signup, signin, OAuth, token refresh, logout
  */
+
+const resolveUserType = (age) => {
+  if (typeof age !== 'number') {
+    return 'teenager';
+  }
+  return age >= 13 ? 'teenager' : 'child';
+};
+
+const toUserPayload = (user) => ({
+  id: user.id,
+  email: user.email,
+  firstName: user.firstName || '',
+  lastName: user.lastName || '',
+  displayName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+  age: user.age,
+  userType: user.userType || resolveUserType(user.age),
+  avatarUrl: user.avatarUrl || null,
+});
 
 /**
  * POST /auth/signup
@@ -60,54 +79,90 @@ export const signup = async (req, res, next) => {
       });
     }
 
-    // Check if email already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(409).json({
-        error: 'Email already registered',
+    let user;
+    let accessToken;
+    let refreshToken;
+
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      const usersCollection = db.collection('users');
+      const refreshTokensCollection = db.collection('refresh_tokens');
+
+      const existingUser = await usersCollection.findOne({ email });
+      if (existingUser) {
+        return res.status(409).json({ error: 'Email already registered' });
+      }
+
+      const passwordHash = await hashPassword(password);
+      user = {
+        id: uuidv4(),
+        email,
+        passwordHash,
+        firstName: resolvedFirstName,
+        lastName: resolvedLastName,
+        age: parseInt(age),
+        gender: gender || 'prefer-not',
+        oauthProvider: 'local',
+        userType: resolveUserType(parseInt(age)),
+        currentStars: 0,
+        isVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+
+      await usersCollection.insertOne(user);
+
+      const tokenFamily = uuidv4();
+      ({ accessToken, refreshToken } = generateTokenPair(user.id, user.userType, user.email, tokenFamily));
+
+      await refreshTokensCollection.insertOne({
+        id: uuidv4(),
+        userId: user.id,
+        tokenFamily,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        revokedAt: null,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    } else {
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(409).json({
+          error: 'Email already registered',
+        });
+      }
+
+      const passwordHash = await hashPassword(password);
+      user = await User.create({
+        email,
+        passwordHash,
+        firstName: resolvedFirstName,
+        lastName: resolvedLastName,
+        age: parseInt(age),
+        gender: gender || 'prefer-not',
+        oauthProvider: 'local',
+      });
+
+      const tokenFamily = uuidv4();
+      ({ accessToken, refreshToken } = generateTokenPair(user.id, user.userType, user.email, tokenFamily));
+
+      await RefreshToken.create({
+        userId: user.id,
+        tokenFamily,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
       });
     }
-
-    // Hash password
-    const passwordHash = await hashPassword(password);
-
-    // Create user
-    const user = await User.create({
-      email,
-      passwordHash,
-      firstName: resolvedFirstName,
-      lastName: resolvedLastName,
-      age: parseInt(age),
-      gender: gender || 'prefer-not',
-      oauthProvider: 'local',
-    });
-
-    // Generate tokens
-    const tokenFamily = uuidv4();
-    const { accessToken, refreshToken } = generateTokenPair(user.id, user.userType, user.email, tokenFamily);
-
-    // Store refresh token in database
-    await RefreshToken.create({
-      userId: user.id,
-      tokenFamily,
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-    });
 
     logger.info('User signed up', { userId: user.id, email });
 
     return res.status(201).json({
       message: 'Signup successful',
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        displayName: user.displayName,
-        age: user.age,
-        userType: user.userType,
-      },
+      user: toUserPayload(user),
       token: accessToken,
       tokens: {
         accessToken,
@@ -140,10 +195,16 @@ export const signin = async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid email address' });
     }
 
-    // Find user
-    const user = await User.findOne({
-      where: { email },
-    });
+    let user;
+
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      user = await db.collection('users').findOne({ email, deletedAt: null });
+    } else {
+      user = await User.findOne({
+        where: { email },
+      });
+    }
 
     if (!user) {
       return res.status(401).json({
@@ -166,32 +227,42 @@ export const signin = async (req, res, next) => {
       });
     }
 
-    // Generate tokens
     const tokenFamily = uuidv4();
-    const { accessToken, refreshToken } = generateTokenPair(user.id, user.userType, user.email, tokenFamily);
+    const { accessToken, refreshToken } = generateTokenPair(
+      user.id,
+      user.userType || resolveUserType(user.age),
+      user.email,
+      tokenFamily
+    );
 
-    // Store refresh token
-    await RefreshToken.create({
-      userId: user.id,
-      tokenFamily,
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-    });
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      await db.collection('refresh_tokens').insertOne({
+        id: uuidv4(),
+        userId: user.id,
+        tokenFamily,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        revokedAt: null,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    } else {
+      await RefreshToken.create({
+        userId: user.id,
+        tokenFamily,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+    }
 
     logger.info('User signed in', { userId: user.id, email });
 
     return res.status(200).json({
       message: 'Signin successful',
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        displayName: user.displayName,
-        age: user.age,
-        userType: user.userType,
-      },
+      user: toUserPayload(user),
       token: accessToken,
       tokens: {
         accessToken,
@@ -222,15 +293,25 @@ export const refresh = async (req, res, next) => {
     // Verify token signature
     const decoded = jwt.verify(token, environment.JWT.refreshSecret);
 
-    // Find refresh token in database
-    const storedToken = await RefreshToken.findOne({
-      where: {
+    let storedToken;
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      storedToken = await db.collection('refresh_tokens').findOne({
         userId: decoded.id,
         tokenFamily: decoded.tokenFamily,
         revokedAt: null,
-        expiresAt: { [Op.gt]: new Date() },
-      },
-    });
+        expiresAt: { $gt: new Date() },
+      });
+    } else {
+      storedToken = await RefreshToken.findOne({
+        where: {
+          userId: decoded.id,
+          tokenFamily: decoded.tokenFamily,
+          revokedAt: null,
+          expiresAt: { [Op.gt]: new Date() },
+        },
+      });
+    }
 
     if (!storedToken) {
       logger.warn('Invalid refresh token attempt', { userId: decoded.id });
@@ -239,8 +320,13 @@ export const refresh = async (req, res, next) => {
       });
     }
 
-    // Get user
-    const user = await User.findByPk(decoded.id);
+    let user;
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      user = await db.collection('users').findOne({ id: decoded.id, deletedAt: null });
+    } else {
+      user = await User.findByPk(decoded.id);
+    }
     if (!user) {
       return res.status(401).json({
         error: 'User not found',
@@ -255,14 +341,28 @@ export const refresh = async (req, res, next) => {
       decoded.tokenFamily
     );
 
-    // Create new refresh token in database
-    await RefreshToken.create({
-      userId: user.id,
-      tokenFamily: decoded.tokenFamily,
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-    });
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      await db.collection('refresh_tokens').insertOne({
+        id: uuidv4(),
+        userId: user.id,
+        tokenFamily: decoded.tokenFamily,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        revokedAt: null,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    } else {
+      await RefreshToken.create({
+        userId: user.id,
+        tokenFamily: decoded.tokenFamily,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+    }
 
     logger.debug('Token refreshed', { userId: user.id });
 
@@ -294,11 +394,18 @@ export const logout = async (req, res, next) => {
       });
     }
 
-    // Revoke all refresh tokens for this user
-    await RefreshToken.update(
-      { revokedAt: new Date() },
-      { where: { userId: req.user.id, revokedAt: null } }
-    );
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      await db.collection('refresh_tokens').updateMany(
+        { userId: req.user.id, revokedAt: null },
+        { $set: { revokedAt: new Date(), updatedAt: new Date() } }
+      );
+    } else {
+      await RefreshToken.update(
+        { revokedAt: new Date() },
+        { where: { userId: req.user.id, revokedAt: null } }
+      );
+    }
 
     logger.info('User logged out', { userId: req.user.id });
 
@@ -444,26 +551,114 @@ export const handleGoogleCallback = async (req, res, next) => {
       });
     }
 
-    // Find or create user
-    let user = await User.findOne({
+    let user;
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      const usersCollection = db.collection('users');
+      const refreshTokensCollection = db.collection('refresh_tokens');
+
+      user = await usersCollection.findOne({ googleId: userGoogleId, deletedAt: null });
+
+      if (!user) {
+        user = {
+          id: uuidv4(),
+          email: userEmail,
+          firstName: userFirstName,
+          lastName: userLastName,
+          googleId: userGoogleId,
+          avatarUrl: userPicture,
+          oauthProvider: 'google',
+          userType: 'teenager',
+          currentStars: 0,
+          isVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        };
+        await usersCollection.insertOne(user);
+        logger.info('New user created via Google OAuth', {
+          userId: user.id,
+          email: userEmail,
+          googleId: userGoogleId,
+        });
+      } else if (user.email !== userEmail) {
+        await usersCollection.updateOne(
+          { id: user.id },
+          { $set: { email: userEmail, updatedAt: new Date() } }
+        );
+        user.email = userEmail;
+      }
+
+      const tokenFamily = uuidv4();
+      const { accessToken, refreshToken } = generateTokenPair(user.id, user.userType, user.email, tokenFamily);
+
+      await refreshTokensCollection.insertOne({
+        id: uuidv4(),
+        userId: user.id,
+        tokenFamily,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        revokedAt: null,
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      logger.info('User authenticated via Google OAuth', { userId: user.id, email: userEmail });
+
+      return res.status(200).json({
+        message: 'Google OAuth successful',
+        user: toUserPayload(user),
+        token: accessToken,
+        tokens: {
+          accessToken,
+          refreshToken,
+        },
+      });
+    }
+
+    // Find or create user (paranoid: false to also match soft-deleted records
+    // so we never hit a unique-constraint error on email/googleId)
+    user = await User.findOne({
       where: { googleId: userGoogleId },
+      paranoid: false,
     });
 
     if (!user) {
-      // New user - create account
-      user = await User.create({
-        email: userEmail,
-        firstName: userFirstName,
-        lastName: userLastName,
-        googleId: userGoogleId,
-        avatarUrl: userPicture,
-        oauthProvider: 'google',
+      // No user with this googleId — check if one exists with the same email
+      user = await User.findOne({
+        where: { email: userEmail },
+        paranoid: false,
       });
 
-      logger.info('New user created via Google OAuth', { userId: user.id, email: userEmail, googleId: userGoogleId });
-    } else if (user.email !== userEmail) {
-      // Update email if changed
-      user.email = userEmail;
+      if (user) {
+        // Existing user (possibly soft-deleted) → link Google & restore
+        user.googleId = userGoogleId;
+        user.avatarUrl = user.avatarUrl || userPicture;
+        user.oauthProvider = 'google';
+        user.deletedAt = null; // restore if soft-deleted
+        await user.save();
+        logger.info('Linked Google account to existing user', { userId: user.id, email: userEmail });
+      } else {
+        // Brand-new user → create account
+        user = await User.create({
+          email: userEmail,
+          firstName: userFirstName,
+          lastName: userLastName,
+          googleId: userGoogleId,
+          avatarUrl: userPicture,
+          oauthProvider: 'google',
+        });
+        logger.info('New user created via Google OAuth', { userId: user.id, email: userEmail, googleId: userGoogleId });
+      }
+    } else {
+      // Found by googleId — restore if soft-deleted, update email if changed
+      if (user.deletedAt) {
+        user.deletedAt = null;
+      }
+      if (user.email !== userEmail) {
+        user.email = userEmail;
+      }
       await user.save();
     }
 
@@ -484,16 +679,7 @@ export const handleGoogleCallback = async (req, res, next) => {
 
     return res.status(200).json({
       message: 'Google OAuth successful',
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        displayName: user.displayName,
-        age: user.age,
-        userType: user.userType,
-        avatarUrl: user.avatarUrl,
-      },
+      user: toUserPayload(user),
       token: accessToken,
       tokens: {
         accessToken,

@@ -27,6 +27,7 @@ import ChildrenCoursesPage from "./pages/ChildrenCoursesPage";
 import ChildrenLessonPage from "./pages/ChildrenLessonPage";
 import ChildrenNewsStoryPage from "./pages/ChildrenNewsStoryPage";
 import ChildrenNewsGenerationPage from "./pages/ChildrenNewsGenerationPage";
+import PsychiatristPage from "./pages/PsychiatristPage";
 import { Toaster } from "react-hot-toast";
 import LoadingSpinner from "./components/common/LoadingSpinner";
 
@@ -99,6 +100,7 @@ const AppContent = () => {
             <Route path="/teen/chatbot" element={<Chatbot />} />
             <Route path="/teen/forums" element={<Forums />} />
             <Route path="/teen/social" element={<Navigate to="/expression" replace />} />
+            <Route path="/teen/psychiatrist" element={<PsychiatristPage />} />
           </>
         )}
 

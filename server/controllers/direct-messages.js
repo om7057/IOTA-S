@@ -1,9 +1,20 @@
 import { Conversation, DirectMessage, User } from '../models/index.js';
 import { sequelize } from '../models/index.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Get or create conversation between two users
  */
+
+/**
+ * Helper: Resolve conversation participants
+ */
+function getConversationId(userId1, userId2) {
+  const sorted = [userId1, userId2].sort();
+  return sorted.join('_');
+}
+
 export const getOrCreateConversation = async (req, res) => {
   try {
     const { userId } = req.params;

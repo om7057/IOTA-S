@@ -62,7 +62,7 @@ const ChildrenCoursesPage = () => {
 
   const categories = [
     { id: 'all', label: 'All Courses', icon: '📚' },
-    { id: 'body-safety', label: 'Sexual Abuse', icon: '🛡️' },
+    { id: 'body-safety', label: 'Body Safety & Boundaries', icon: '🛡️' },
     { id: 'relationships', label: 'Child Labour', icon: '⚠️' },
     { id: 'boundaries', label: 'Child Marriage', icon: '💍' },
     { id: 'general', label: 'Online Safety', icon: '📱' },
@@ -73,7 +73,7 @@ const ChildrenCoursesPage = () => {
       {/* Header */}
       <div className="children-header">
         <h1>🛡️ Child Safety Learning</h1>
-        <p>Story-based courses on sexual abuse, child labour, child marriage, and online exploitation</p>
+        <p>Story-based courses on body safety, child labour, child marriage, and online safety</p>
       </div>
 
       {/* Category Filter */}

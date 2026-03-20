@@ -3,6 +3,7 @@ import cors from 'cors';
 import environment from './config/environment.js';
 import { logger } from './utils/logger.js';
 import { connectDB } from './models/index.js';
+import { connectMongo, isMongoPrimaryEnabled } from './config/mongo.js';
 import { requestLogger, errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
@@ -25,6 +26,7 @@ import chatbotRoutes from './routes/chatbot.js';
 import forumsRoutes from './routes/forums.js';
 import socialRoutes from './routes/social.js';
 import storyAttemptsRoutes from './routes/story-attempts.js';
+import psychiatristRoutes from './routes/psychiatrist.js';
 
 const app = express();
 
@@ -101,7 +103,10 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/forums', forumsRoutes);
 app.use('/api/social', socialRoutes);
 
-logger.info('Routes registered: /api/auth (Phase 2), /api/users (Phase 3), /api/journals (Phase 4), /api/topics (Phase 4), /api/stories (Phase 4), /api/quizzes (Phase 5), /api/leaderboards (Phase 5), /api/progress (Phase 5), /api/story-attempts (Phase 5), /api/admin (Admin), /api/groups (Phase 6), /api/discussions (Phase 6), /api/messages (Phase 6), /api/chats (Phase 6), /api/achievements (Phase 8), /api/parental (Phase 8), /api/chatbot (Phase 8B), /api/forums (Phase 8B), /api/social (Phase 8B)');
+// ==================== Phase 9: Teen Mental Health - Psychiatrist Support & Chat ====================
+app.use('/api/psychiatrists', psychiatristRoutes);
+
+logger.info('Routes registered: /api/auth (Phase 2), /api/users (Phase 3), /api/journals (Phase 4), /api/topics (Phase 4), /api/stories (Phase 4), /api/quizzes (Phase 5), /api/leaderboards (Phase 5), /api/progress (Phase 5), /api/story-attempts (Phase 5), /api/admin (Admin), /api/groups (Phase 6), /api/discussions (Phase 6), /api/messages (Phase 6), /api/chats (Phase 6), /api/achievements (Phase 8), /api/parental (Phase 8), /api/chatbot (Phase 8B), /api/forums (Phase 8B), /api/social (Phase 8B), /api/psychiatrists (Phase 9)');
 
 // ==================== Error Handling ====================
 
@@ -115,9 +120,21 @@ app.use(errorHandler);
 
 const startServer = async () => {
   try {
-    // Connect to database
-    logger.info('Connecting to database...');
-    await connectDB();
+    // Connect to MongoDB if configured
+    const mongoDb = await connectMongo();
+    if (mongoDb) {
+      logger.info('MongoDB connection ready');
+    } else {
+      logger.info('MongoDB URI not configured, skipping Mongo connection');
+    }
+
+    // Connect to PostgreSQL unless Mongo is explicitly configured as primary
+    if (!isMongoPrimaryEnabled()) {
+      logger.info('Connecting to PostgreSQL database...');
+      await connectDB();
+    } else {
+      logger.info('USE_MONGO_PRIMARY=true, skipping PostgreSQL startup connection');
+    }
 
     // Start plain HTTP API server (websocket disabled)
     app.listen(environment.PORT, () => {

@@ -26,8 +26,8 @@ const Stories = () => {
   // Story icon based on topic
   const getStoryIcon = (topicName) => {
     const name = topicName?.toLowerCase() || "";
-    if (name.includes("abuse")) return <Shield className="w-6 h-6" />;
-    if (name.includes("exploitation")) return <Scale className="w-6 h-6" />;
+    if (name.includes("body") || name.includes("bad touch")) return <Shield className="w-6 h-6" />;
+    if (name.includes("online")) return <Scale className="w-6 h-6" />;
     return <BookOpen className="w-6 h-6" />;
   };
 
