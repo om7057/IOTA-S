@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import './Forums.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
 const Forums = () => {
+  const { user, token: authToken } = useAuth();
   const [threads, setThreads] = useState([]);
   const [selectedThread, setSelectedThread] = useState(null);
   const [threadReplies, setThreadReplies] = useState([]);
@@ -13,8 +17,13 @@ const Forums = () => {
   const [category, setCategory] = useState('all');
   const [groupId, setGroupId] = useState(localStorage.getItem('groupId') || '');
 
-  const token = localStorage.getItem('token');
-  const userId = localStorage.getItem('userId');
+  const token = authToken || localStorage.getItem('token');
+  const userId = user?.id || localStorage.getItem('userId');
+
+  const getDisplayName = (u) => {
+    if (!u) return 'Unknown';
+    return u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Unknown';
+  };
 
   // Load threads on mount or when groupId changes
   useEffect(() => {
@@ -26,7 +35,7 @@ const Forums = () => {
   const loadThreads = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/forums/group/${groupId}`, {
+      const response = await axios.get(`${API_URL}/forums/group/${groupId}`, {
         params: { category: category !== 'all' ? category : undefined },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -40,7 +49,7 @@ const Forums = () => {
 
   const loadThread = async (threadId) => {
     try {
-      const response = await axios.get(`/api/forums/${threadId}`, {
+      const response = await axios.get(`${API_URL}/forums/${threadId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSelectedThread(response.data.data);
@@ -56,7 +65,7 @@ const Forums = () => {
 
     try {
       const response = await axios.post(
-        '/api/forums',
+        `${API_URL}/forums`,
         {
           groupId,
           creatorId: userId,
@@ -81,7 +90,7 @@ const Forums = () => {
 
     try {
       const response = await axios.post(
-        `/api/forums/${selectedThread.id}/reply`,
+        `${API_URL}/forums/${selectedThread.id}/reply`,
         {
           threadId: selectedThread.id,
           userId,
@@ -99,7 +108,7 @@ const Forums = () => {
 
   const handleLikeReply = async (replyId) => {
     try {
-      await axios.post(`/api/forums/reply/${replyId}/like`, {}, {
+      await axios.post(`${API_URL}/forums/reply/${replyId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       loadThread(selectedThread.id); // Refresh replies
@@ -172,7 +181,7 @@ const Forums = () => {
                   <h3>{thread.title}</h3>
                   <p>{thread.content.substring(0, 80)}...</p>
                   <div className="thread-meta">
-                    <span className="author">by {thread.creator?.name}</span>
+                    <span className="author">by {getDisplayName(thread.creator)}</span>
                     <span className="replies">💬 {thread.replyCount}</span>
                     <span className="category">{thread.category}</span>
                   </div>
@@ -201,7 +210,7 @@ const Forums = () => {
               <div className="thread-owner">
                 <span className="owner-avatar">👤</span>
                 <div>
-                  <strong>{selectedThread.creator?.name}</strong>
+                  <strong>{getDisplayName(selectedThread.creator)}</strong>
                   <small>
                     {new Date(selectedThread.createdAt).toLocaleDateString()}
                   </small>
@@ -235,7 +244,7 @@ const Forums = () => {
                             <strong>
                               {reply.isAnonymous
                                 ? reply.anonymousName
-                                : reply.creator?.name}
+                                : getDisplayName(reply.creator)}
                             </strong>
                             <small>
                               {new Date(reply.createdAt).toLocaleString()}

@@ -1,5 +1,6 @@
 import { Post, Comment, User, Group } from '../models/index.js';
 import { Op } from 'sequelize';
+import { sequelize } from '../models/index.js';
 
 // Get social feed (posts from user's groups)
 export const getSocialFeed = async (req, res) => {
@@ -19,18 +20,19 @@ export const getSocialFeed = async (req, res) => {
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'name', 'avatar', 'email'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
         { model: Group, as: 'group', attributes: ['id', 'name'] },
         {
           model: Comment,
           as: 'comments',
-          attributes: ['id', 'content', 'createdAt'],
+          // Keep userId in projection so Sequelize can join comment creator.
+          attributes: ['id', 'content', 'createdAt', 'userId', 'isAnonymous', 'anonymousName'],
           include: [
             {
               model: User,
               as: 'creator',
-              attributes: ['id', 'name'],
+              attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
             },
           ],
           limit: 3,
@@ -98,7 +100,7 @@ export const createPost = async (req, res) => {
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'name', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
         { model: Group, as: 'group', attributes: ['id', 'name'] },
       ],
@@ -142,7 +144,7 @@ export const getUserPosts = async (req, res) => {
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'name', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
         { model: Group, as: 'group', attributes: ['id', 'name'] },
       ],
@@ -215,7 +217,7 @@ export const addComment = async (req, res) => {
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'name', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
       ],
     });
@@ -258,7 +260,7 @@ export const getPostComments = async (req, res) => {
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'name', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
         {
           model: Comment,
@@ -267,7 +269,7 @@ export const getPostComments = async (req, res) => {
             {
               model: User,
               as: 'creator',
-              attributes: ['id', 'name', 'avatar'],
+              attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
             },
           ],
         },
@@ -365,7 +367,7 @@ export const getTrendingPosts = async (req, res) => {
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'name', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
       ],
       order: [[sequelize.literal('likeCount + commentCount + shareCount'), 'DESC']],

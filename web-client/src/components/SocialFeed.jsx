@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import './SocialFeed.css';
 
-const SocialFeed = () => {
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+const SocialFeed = ({ embedded = false }) => {
+  const { user, token: authToken } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
@@ -12,8 +16,13 @@ const SocialFeed = () => {
   const [expandedComments, setExpandedComments] = useState({});
   const [newComments, setNewComments] = useState({});
 
-  const userId = localStorage.getItem('userId') || 'demo-user';
-  const token = localStorage.getItem('token');
+  const userId = user?.id || localStorage.getItem('userId');
+  const token = authToken || localStorage.getItem('token');
+
+  const getDisplayName = (u) => {
+    if (!u) return 'Anonymous';
+    return u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Anonymous';
+  };
 
   useEffect(() => {
     loadFeed();
@@ -22,7 +31,7 @@ const SocialFeed = () => {
   const loadFeed = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/social/feed/${userId}`, {
+      const response = await axios.get(`${API_URL}/social/feed/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { limit: 20 },
       });
@@ -40,7 +49,7 @@ const SocialFeed = () => {
 
     try {
       const response = await axios.post(
-        '/api/social',
+        `${API_URL}/social`,
         {
           userId,
           title: postTitle || null,
@@ -63,7 +72,7 @@ const SocialFeed = () => {
 
   const handleLikePost = async (postId) => {
     try {
-      await axios.post(`/api/social/${postId}/like`, {}, {
+      await axios.post(`${API_URL}/social/${postId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
       loadFeed();
@@ -78,7 +87,7 @@ const SocialFeed = () => {
 
     try {
       await axios.post(
-        `/api/social/${postId}/comment`,
+        `${API_URL}/social/${postId}/comment`,
         { postId, userId, content, isAnonymous: false },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -111,11 +120,13 @@ const SocialFeed = () => {
   };
 
   return (
-    <div className="social-feed-container">
-      <div className="feed-header">
+    <div className={`social-feed-container${embedded ? ' social-feed-embedded' : ''}`}>
+      {!embedded && (
+        <div className="feed-header">
         <h1>🌍 Social Feed</h1>
         <p>Share your journey with the community</p>
-      </div>
+        </div>
+      )}
 
       <div className="feed-content">
         <div className="create-post-card">
@@ -191,7 +202,7 @@ const SocialFeed = () => {
                   </div>
                   <div className="post-info">
                     <h3>
-                      {post.creator?.name || post.anonymousName || 'Anonymous'}
+                      {getDisplayName(post.creator) || post.anonymousName || 'Anonymous'}
                     </h3>
                     <small>
                       {new Date(post.createdAt).toLocaleDateString()}
@@ -244,7 +255,7 @@ const SocialFeed = () => {
                               <strong>
                                 {comment.isAnonymous
                                   ? comment.anonymousName
-                                  : comment.creator?.name}
+                                  : getDisplayName(comment.creator)}
                               </strong>
                               <p>{comment.content}</p>
                               <small>

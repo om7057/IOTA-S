@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Newspaper, Globe, TreePine, Heart, School, CheckCircle, AlertCircle, Sparkles, Loader2, Search, ChevronLeft, ChevronRight, BookOpen, Play, X, Image as ImageIcon } from "lucide-react";
 
+const normalizeOptionText = (text = "") =>
+  String(text)
+    .replace(/^[\s\uFE0F\u200D\p{Extended_Pictographic}✓✔✗✕☑☒]+/gu, "")
+    .replace(/^[-:.)\]]+\s*/, "")
+    .trim();
+
 const Live = () => {
   const [articles, setArticles] = useState([]);
   const [loadingNews, setLoadingNews] = useState(true);
@@ -340,7 +346,7 @@ const Live = () => {
                     <span className="w-8 h-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center font-semibold text-sm">
                       {String.fromCharCode(65 + i)}
                     </span>
-                    <span className="text-gray-700 font-medium">{option.text}</span>
+                    <span className="text-gray-700 font-medium">{normalizeOptionText(option.text)}</span>
                   </button>
                 ))}
                 

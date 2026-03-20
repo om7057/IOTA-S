@@ -259,7 +259,7 @@ const Quiz = () => {
                 See Leaderboard
               </button>
               <button
-                onClick={() => navigate("/story-learning")}
+                onClick={() => navigate("/children")}
                 className="btn btn-secondary"
               >
                 <BookOpen className="w-5 h-5 mr-2" />

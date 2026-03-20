@@ -1,10 +1,13 @@
 import { NewsStory, Topic } from '../models/index.js';
 import { logger } from '../utils/logger.js';
+import { generateQuizFromStory } from '../services/quizGenerator.js';
+import { saveGeneratedQuiz } from './quiz.js';
 
 /**
  * News Stories Controller
  * Handles news stories generated from news articles
  * Integrates with news fetcher service
+ * Auto-generates quizzes for every story created
  */
 
 // Get all news stories
@@ -125,6 +128,7 @@ export const createNewsStory = async (req, res) => {
       });
     }
 
+    // Create the news story
     const newsStory = await NewsStory.create({
       title,
       description,
@@ -137,6 +141,10 @@ export const createNewsStory = async (req, res) => {
       storyJson,
       isPublished: true,
     });
+
+    // Auto-generate and save quiz for this story (non-blocking, async)
+    // This ensures every story has an associated quiz for learning reinforcement
+    generateQuizForStoryAsync(newsStory);
 
     res.status(201).json({
       success: true,
@@ -152,6 +160,35 @@ export const createNewsStory = async (req, res) => {
     });
   }
 };
+
+/**
+ * Async helper to generate quiz for story without blocking response
+ * @param {Object} newsStory - NewsStory instance
+ */
+async function generateQuizForStoryAsync(newsStory) {
+  try {
+    logger.info(`Generating quiz for story: ${newsStory.title}`);
+    
+    // Generate quiz using LLM
+    const generatedQuiz = await generateQuizFromStory(
+      {
+        title: newsStory.title,
+        description: newsStory.description,
+        content: newsStory.content,
+        category: newsStory.category,
+      },
+      newsStory.id
+    );
+
+    // Save quiz to database with questions
+    await saveGeneratedQuiz(generatedQuiz, newsStory.id);
+    
+    logger.info(`Quiz auto-generated and saved for story: ${newsStory.id}`);
+  } catch (error) {
+    logger.error(`Failed to auto-generate quiz for story ${newsStory.id}:`, error);
+    // Don't throw - graceful failure since story is already saved
+  }
+}
 
 // Update news story
 export const updateNewsStory = async (req, res) => {

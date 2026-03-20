@@ -51,17 +51,26 @@ export const getOrCreateConversation = async (req, res) => {
         {
           model: User,
           as: 'sender',
-          attributes: ['id', 'username', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
       ],
       order: [['createdAt', 'ASC']],
+    });
+
+    const normalizedMessages = messages.map((message) => {
+      const raw = message.toJSON();
+      if (raw.sender) {
+        raw.sender.username = `${raw.sender.firstName || ''} ${raw.sender.lastName || ''}`.trim() || raw.sender.email || 'Learner';
+        raw.sender.avatar = raw.sender.avatarUrl || null;
+      }
+      return raw;
     });
 
     res.json({
       success: true,
       data: {
         conversation,
-        messages,
+        messages: normalizedMessages,
       },
     });
   } catch (error) {
@@ -91,21 +100,34 @@ export const getUserConversations = async (req, res) => {
         {
           model: User,
           as: 'user1',
-          attributes: ['id', 'username', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
         {
           model: User,
           as: 'user2',
-          attributes: ['id', 'username', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
       ],
       order: [['lastMessageAt', 'DESC']],
     });
 
+    const normalizedConversations = conversations.map((conversation) => {
+      const raw = conversation.toJSON();
+      if (raw.user1) {
+        raw.user1.username = `${raw.user1.firstName || ''} ${raw.user1.lastName || ''}`.trim() || raw.user1.email || 'Learner';
+        raw.user1.avatar = raw.user1.avatarUrl || null;
+      }
+      if (raw.user2) {
+        raw.user2.username = `${raw.user2.firstName || ''} ${raw.user2.lastName || ''}`.trim() || raw.user2.email || 'Learner';
+        raw.user2.avatar = raw.user2.avatarUrl || null;
+      }
+      return raw;
+    });
+
     res.json({
       success: true,
-      data: conversations,
-      total: conversations.length,
+      data: normalizedConversations,
+      total: normalizedConversations.length,
     });
   } catch (error) {
     console.error('GetUserConversations error:', error);
@@ -202,17 +224,26 @@ export const getConversationMessages = async (req, res) => {
         {
           model: User,
           as: 'sender',
-          attributes: ['id', 'username', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
       ],
       order: [['createdAt', 'DESC']],
       limit: Math.min(parseInt(limit) || 50, 200),
     });
 
+    const normalizedMessages = messages.reverse().map((message) => {
+      const raw = message.toJSON();
+      if (raw.sender) {
+        raw.sender.username = `${raw.sender.firstName || ''} ${raw.sender.lastName || ''}`.trim() || raw.sender.email || 'Learner';
+        raw.sender.avatar = raw.sender.avatarUrl || null;
+      }
+      return raw;
+    });
+
     res.json({
       success: true,
-      data: messages.reverse(),
-      total: messages.length,
+      data: normalizedMessages,
+      total: normalizedMessages.length,
     });
   } catch (error) {
     console.error('GetConversationMessages error:', error);

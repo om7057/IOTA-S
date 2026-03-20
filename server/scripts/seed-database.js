@@ -10,6 +10,7 @@ import { seedQuizzes } from '../seeds/quizzes.js';
 import { seedGroups } from '../seeds/groups.js';
 import { seedChildrenCourses } from '../seeds/children-courses.js';
 import { seedNewsStories } from '../seeds/news-stories.js';
+import { seedStoryAttempts } from '../seeds/story-attempts.js';
 import { sequelize } from '../config/sequelize.js';
 
 config();
@@ -37,6 +38,9 @@ const main = async () => {
     
     console.log('\n📰 Seeding news stories...');
     await seedNewsStories();
+    
+    console.log('\n🎯 Seeding story attempts (child quiz tracking)...');
+    await seedStoryAttempts();
     
     console.log('\n✅ Database seeding complete!');
     process.exit(0);

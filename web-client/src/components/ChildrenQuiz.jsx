@@ -21,7 +21,7 @@ const ChildrenQuiz = ({ lesson, onBack, onComplete }) => {
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
   const challenges = lesson.challenges || [];
   const current = challenges[currentIndex];
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('authToken');
   const correctAudioRef = useRef(null);
   const incorrectAudioRef = useRef(null);
   const finishAudioRef = useRef(null);

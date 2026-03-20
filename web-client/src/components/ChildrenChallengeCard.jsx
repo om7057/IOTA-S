@@ -1,5 +1,11 @@
 import React from 'react';
 
+const normalizeOptionText = (text = '') =>
+  String(text)
+    .replace(/^[\s\uFE0F\u200D\p{Extended_Pictographic}✓✔✗✕☑☒]+/gu, '')
+    .replace(/^[-:.)\]]+\s*/, '')
+    .trim();
+
 const ChildrenChallengeCard = ({
   option,
   index,
@@ -23,7 +29,7 @@ const ChildrenChallengeCard = ({
       )}
       <div className="option-content">
         <span className="option-letter">{String.fromCharCode(65 + index)}</span>
-        <span className="option-text">{option.text}</span>
+        <span className="option-text">{normalizeOptionText(option.text)}</span>
       </div>
       {selected && status !== 'none' && (
         <span className="result-icon">{status === 'correct' ? '✓' : '✗'}</span>

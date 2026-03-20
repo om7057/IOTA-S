@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Lightbulb, BookOpen, Play, Search, Loader2, Info } from "lucide-react";
 
 const QuizLandingPage = () => {
+  const [searchParams] = useSearchParams();
+  const storyId = searchParams.get('storyId');
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -11,9 +13,18 @@ const QuizLandingPage = () => {
       setLoading(true);
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-        const res = await fetch(`${apiUrl}/quizzes`);
+        const endpoint = storyId
+          ? `${apiUrl}/quizzes/story/${storyId}`
+          : `${apiUrl}/quizzes`;
+
+        const res = await fetch(endpoint);
         const payload = await res.json();
-        setQuizzes(payload?.data || []);
+
+        if (storyId) {
+          setQuizzes(payload?.data ? [payload.data] : []);
+        } else {
+          setQuizzes(payload?.data || []);
+        }
       } catch (err) {
         console.error("Error fetching quizzes:", err);
         setQuizzes([]);
@@ -23,7 +34,7 @@ const QuizLandingPage = () => {
     };
 
     fetchQuizzes();
-  }, []);
+  }, [storyId]);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -31,7 +42,11 @@ const QuizLandingPage = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quiz Adventure</h1>
-          <p className="text-gray-500">Pick a story and test what you've learned</p>
+          <p className="text-gray-500">
+            {storyId
+              ? "Your story quiz is ready"
+              : "Pick a story and test what you've learned"}
+          </p>
         </div>
         <div className="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
           <Lightbulb className="w-6 h-6" />
@@ -49,7 +64,11 @@ const QuizLandingPage = () => {
             <Search className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No quizzes available</h3>
-          <p className="text-gray-500">Check back later for new quizzes.</p>
+          <p className="text-gray-500">
+            {storyId
+              ? "This story quiz could not be loaded right now."
+              : "Check back later for new quizzes."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

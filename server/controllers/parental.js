@@ -1,24 +1,57 @@
-import { ParentalAccount, User } from '../models/index.js';
+import {
+  ParentalAccount,
+  User,
+  Journal,
+  Story,
+  UserStoryProgress,
+  ChildrenProgress,
+  ChildrenChallengeProgress,
+} from '../models/index.js';
 import { logger } from '../utils/logger.js';
+
+const formatUserName = (user) => {
+  if (!user) return 'Unknown User';
+  if (user.displayName) return user.displayName;
+  const first = user.firstName || '';
+  const last = user.lastName || '';
+  const full = `${first} ${last}`.trim();
+  return full || user.email || 'Unknown User';
+};
 
 /**
  * Create parental link - parent adds child
  */
 export const createParentalLink = async (req, res) => {
   try {
-    const { parentUserId, childUserId, relationship = 'parent' } = req.body;
-
-    // Verify both users exist
-    const parent = await User.findByPk(parentUserId);
-    const child = await User.findByPk(childUserId);
-
-    if (!parent || !child) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+    const requesterId = req.user?.id;
+    if (!requesterId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    // Create parental account
+    const { childUserId, childEmail, relationship = 'parent' } = req.body;
+
+    const parent = await User.findByPk(requesterId);
+    if (!parent) {
+      return res.status(404).json({ success: false, message: 'Parent user not found' });
+    }
+
+    let child = null;
+    if (childUserId) {
+      child = await User.findByPk(childUserId);
+    } else if (childEmail) {
+      child = await User.findOne({ where: { email: String(childEmail).toLowerCase() } });
+    }
+
+    if (!child) {
+      return res.status(404).json({ success: false, message: 'Child user not found' });
+    }
+
+    if (child.id === parent.id) {
+      return res.status(400).json({ success: false, message: 'You cannot link your own account as a child' });
+    }
+
     const [account, created] = await ParentalAccount.findOrCreate({
-      where: { childUserId, parentUserId },
+      where: { childUserId: child.id, parentUserId: parent.id },
       defaults: {
         relationship,
         isActive: false, // Needs child approval
@@ -29,14 +62,27 @@ export const createParentalLink = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Parental link already exists' });
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Parental link created (pending child approval)',
-      data: account,
+      data: {
+        id: account.id,
+        relationship: account.relationship,
+        isActive: account.isActive,
+        approvedAt: account.approvedAt,
+        child: {
+          id: child.id,
+          name: formatUserName(child),
+          email: child.email,
+          avatarUrl: child.avatarUrl || null,
+          age: child.age,
+          joinedAt: child.createdAt,
+        },
+      },
     });
   } catch (error) {
     logger.error('Error creating parental link', { error: error.message });
-    res.status(500).json({ success: false, message: 'Failed to create parental link' });
+    return res.status(500).json({ success: false, message: 'Failed to create parental link' });
   }
 };
 
@@ -45,10 +91,15 @@ export const createParentalLink = async (req, res) => {
  */
 export const approveParentalLink = async (req, res) => {
   try {
-    const { parentalAccountId, childUserId } = req.body;
+    const requesterId = req.user?.id;
+    const { parentalAccountId } = req.params;
+
+    if (!requesterId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
 
     const account = await ParentalAccount.findByPk(parentalAccountId);
-    if (!account || account.childUserId !== childUserId) {
+    if (!account || account.childUserId !== requesterId) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
@@ -57,14 +108,14 @@ export const approveParentalLink = async (req, res) => {
       approvedAt: new Date(),
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Parental link approved',
       data: account,
     });
   } catch (error) {
     logger.error('Error approving parental link', { error: error.message });
-    res.status(500).json({ success: false, message: 'Failed to approve link' });
+    return res.status(500).json({ success: false, message: 'Failed to approve link' });
   }
 };
 
@@ -73,22 +124,41 @@ export const approveParentalLink = async (req, res) => {
  */
 export const getMyParents = async (req, res) => {
   try {
+    const requesterId = req.user?.id;
     const { userId } = req.params;
 
-    const parentLinkis = await ParentalAccount.findAll({
+    if (!requesterId || requesterId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const parentLinks = await ParentalAccount.findAll({
       where: { childUserId: userId },
       include: [
-        { model: User, as: 'parent', attributes: ['id', 'name', 'email', 'avatar'] },
+        { model: User, as: 'parent', attributes: ['id', 'firstName', 'lastName', 'email', 'avatarUrl', 'createdAt'] },
       ],
+      order: [['createdAt', 'DESC']],
     });
 
-    res.json({
+    return res.json({
       success: true,
-      data: parentLinks,
+      data: parentLinks.map((link) => ({
+        id: link.id,
+        relationship: link.relationship,
+        isActive: link.isActive,
+        approvedAt: link.approvedAt,
+        allowNotifications: link.allowNotifications,
+        parent: {
+          id: link.parent?.id,
+          name: formatUserName(link.parent),
+          email: link.parent?.email || null,
+          avatarUrl: link.parent?.avatarUrl || null,
+          joinedAt: link.parent?.createdAt || null,
+        },
+      })),
     });
   } catch (error) {
     logger.error('Error fetching parental accounts', { error: error.message });
-    res.status(500).json({ success: false, message: 'Failed to fetch parental accounts' });
+    return res.status(500).json({ success: false, message: 'Failed to fetch parental accounts' });
   }
 };
 
@@ -97,22 +167,59 @@ export const getMyParents = async (req, res) => {
  */
 export const getMyChildren = async (req, res) => {
   try {
+    const requesterId = req.user?.id;
     const { userId } = req.params;
 
+    if (!requesterId || requesterId !== userId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
     const childLinks = await ParentalAccount.findAll({
-      where: { parentUserId: userId, isActive: true },
+      where: { parentUserId: userId },
       include: [
-        { model: User, as: 'child', attributes: ['id', 'name', 'avatar', 'age', 'createdAt'] },
+        { model: User, as: 'child', attributes: ['id', 'firstName', 'lastName', 'email', 'avatarUrl', 'age', 'createdAt'] },
       ],
+      order: [['createdAt', 'DESC']],
     });
 
-    res.json({
+    const childIds = childLinks.map((link) => link.childUserId);
+    const progressRows = childIds.length
+      ? await ChildrenProgress.findAll({ where: { userId: childIds } })
+      : [];
+
+    const progressByUser = new Map(progressRows.map((row) => [row.userId, row]));
+
+    return res.json({
       success: true,
-      data: childLinks,
+      data: childLinks.map((link) => {
+        const childProgress = progressByUser.get(link.childUserId);
+        return {
+          id: link.id,
+          relationship: link.relationship,
+          isActive: link.isActive,
+          allowNotifications: link.allowNotifications,
+          screenTimeLimit: link.screenTimeLimit,
+          contentFilter: link.contentFilter,
+          approvedAt: link.approvedAt,
+          child: {
+            id: link.child?.id,
+            name: formatUserName(link.child),
+            email: link.child?.email || null,
+            avatarUrl: link.child?.avatarUrl || null,
+            age: link.child?.age || null,
+            joinedAt: link.child?.createdAt || null,
+          },
+          progress: {
+            hearts: childProgress?.hearts ?? 5,
+            points: childProgress?.points ?? 0,
+            totalPoints: childProgress?.totalPoints ?? 0,
+          },
+        };
+      }),
     });
   } catch (error) {
     logger.error('Error fetching children', { error: error.message });
-    res.status(500).json({ success: false, message: 'Failed to fetch children' });
+    return res.status(500).json({ success: false, message: 'Failed to fetch children' });
   }
 };
 
@@ -121,29 +228,39 @@ export const getMyChildren = async (req, res) => {
  */
 export const updateParentalSettings = async (req, res) => {
   try {
-    const { parentalAccountId, permissions, screenTimeLimit, contentFilter, allowNotifications } = req.body;
+    const requesterId = req.user?.id;
+    const { parentalAccountId } = req.params;
+    const { permissions, screenTimeLimit, contentFilter, allowNotifications } = req.body;
+
+    if (!requesterId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
 
     const account = await ParentalAccount.findByPk(parentalAccountId);
     if (!account) {
       return res.status(404).json({ success: false, message: 'Parental account not found' });
     }
 
+    if (account.parentUserId !== requesterId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
     const updates = {};
     if (permissions) updates.permissions = { ...account.permissions, ...permissions };
-    if (screenTimeLimit) updates.screenTimeLimit = screenTimeLimit;
+    if (screenTimeLimit !== undefined) updates.screenTimeLimit = screenTimeLimit;
     if (contentFilter) updates.contentFilter = contentFilter;
     if (allowNotifications !== undefined) updates.allowNotifications = allowNotifications;
 
     const updated = await account.update(updates);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Parental settings updated',
       data: updated,
     });
   } catch (error) {
     logger.error('Error updating parental settings', { error: error.message });
-    res.status(500).json({ success: false, message: 'Failed to update settings' });
+    return res.status(500).json({ success: false, message: 'Failed to update settings' });
   }
 };
 
@@ -152,44 +269,97 @@ export const updateParentalSettings = async (req, res) => {
  */
 export const getChildActivity = async (req, res) => {
   try {
+    const requesterId = req.user?.id;
     const { childUserId } = req.params;
-    const { parentUserId } = req.query;
 
-    // Verify parent has access
+    if (!requesterId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
     const account = await ParentalAccount.findOne({
-      where: { childUserId, parentUserId, isActive: true },
+      where: { childUserId, parentUserId: requesterId, isActive: true },
     });
 
     if (!account) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
-    // Get child's activity (you'd fetch from respective controllers)
     const child = await User.findByPk(childUserId, {
-      include: [
-        { model: Mood, as: 'moods', limit: 10, order: [['createdAt', 'DESC']] },
-        { model: Journal, as: 'journals', limit: 10, order: [['createdAt', 'DESC']] },
-      ],
+      attributes: ['id', 'firstName', 'lastName', 'email', 'avatarUrl', 'createdAt', 'updatedAt'],
     });
 
-    res.json({
+    if (!child) {
+      return res.status(404).json({ success: false, message: 'Child not found' });
+    }
+
+    const [progress, completedStories, challengeAttempts, recentJournals] = await Promise.all([
+      ChildrenProgress.findOne({ where: { userId: childUserId } }),
+      UserStoryProgress.findAll({
+        where: { userId: childUserId, status: 'completed' },
+        include: [{ model: Story, as: 'story', attributes: ['id', 'title', 'category'] }],
+        order: [['completedAt', 'DESC']],
+        limit: 10,
+      }),
+      ChildrenChallengeProgress.findAll({
+        where: { userId: childUserId },
+        order: [['updatedAt', 'DESC']],
+      }),
+      Journal.findAll({
+        where: { userId: childUserId },
+        order: [['createdAt', 'DESC']],
+        limit: 10,
+      }),
+    ]);
+
+    const totalChallengesAttempted = challengeAttempts.length;
+    const completedChallenges = challengeAttempts.filter((row) => row.completed).length;
+    const repeatedWrongAttempts = challengeAttempts.filter((row) => !row.completed && (row.attempts || 0) >= 3).length;
+
+    const metadataAlerts = Array.isArray(account.metadata?.alerts) ? account.metadata.alerts : [];
+    const latestAlerts = metadataAlerts
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 20);
+
+    const normalizedStories = completedStories.map((item) => ({
+      storyId: item.storyId,
+      title: item.story?.title || 'Story',
+      category: item.story?.category || 'general',
+      completedAt: item.completedAt,
+      pointsEarned: item.pointsEarned || 0,
+    }));
+
+
+    return res.json({
       success: true,
       data: {
         child: {
           id: child.id,
-          name: child.name,
+          name: formatUserName(child),
+          email: child.email,
+          avatarUrl: child.avatarUrl || null,
           joinedAt: child.createdAt,
         },
         activity: {
-          recentMoods: child.moods,
-          recentJournals: child.journals,
-          lastActivityAt: child.updatedAt,
+          alerts: latestAlerts,
+          completedStories: normalizedStories,
+          stats: {
+            storiesCompleted: normalizedStories.length,
+            totalChallengesAttempted,
+            completedChallenges,
+            repeatedWrongAttempts,
+            hearts: progress?.hearts ?? 5,
+            points: progress?.points ?? 0,
+            totalPoints: progress?.totalPoints ?? 0,
+            journalEntries: recentJournals.length,
+          },
+          recentMoods,
+          recentJournalsvityAt: child.updatedAt,
         },
       },
     });
   } catch (error) {
     logger.error('Error fetching child activity', { error: error.message });
-    res.status(500).json({ success: false, message: 'Failed to fetch activity' });
+    return res.status(500).json({ success: false, message: 'Failed to fetch activity' });
   }
 };
 
@@ -198,30 +368,39 @@ export const getChildActivity = async (req, res) => {
  */
 export const updateBlockList = async (req, res) => {
   try {
+    const requesterId = req.user?.id;
     const { parentalAccountId, blockedUserId, action = 'add' } = req.body;
+
+    if (!requesterId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
 
     const account = await ParentalAccount.findByPk(parentalAccountId);
     if (!account) {
       return res.status(404).json({ success: false, message: 'Parental account not found' });
     }
 
+    if (account.parentUserId !== requesterId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
     let blockedUsers = account.blockedUsers || [];
     if (action === 'add' && !blockedUsers.includes(blockedUserId)) {
       blockedUsers.push(blockedUserId);
     } else if (action === 'remove') {
-      blockedUsers = blockedUsers.filter(id => id !== blockedUserId);
+      blockedUsers = blockedUsers.filter((id) => id !== blockedUserId);
     }
 
     await account.update({ blockedUsers });
 
-    res.json({
+    return res.json({
       success: true,
       message: `User ${action === 'add' ? 'blocked' : 'unblocked'}`,
       data: account,
     });
   } catch (error) {
     logger.error('Error updating block list', { error: error.message });
-    res.status(500).json({ success: false, message: 'Failed to update block list' });
+    return res.status(500).json({ success: false, message: 'Failed to update block list' });
   }
 };
 
@@ -230,19 +409,31 @@ export const updateBlockList = async (req, res) => {
  */
 export const removeParentalLink = async (req, res) => {
   try {
+    const requesterId = req.user?.id;
     const { parentalAccountId } = req.params;
 
-    await ParentalAccount.destroy({
-      where: { id: parentalAccountId },
-    });
+    if (!requesterId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
 
-    res.json({
+    const account = await ParentalAccount.findByPk(parentalAccountId);
+    if (!account) {
+      return res.status(404).json({ success: false, message: 'Parental account not found' });
+    }
+
+    if (account.parentUserId !== requesterId && account.childUserId !== requesterId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    await account.destroy();
+
+    return res.json({
       success: true,
       message: 'Parental link removed',
     });
   } catch (error) {
     logger.error('Error removing parental link', { error: error.message });
-    res.status(500).json({ success: false, message: 'Failed to remove link' });
+    return res.status(500).json({ success: false, message: 'Failed to remove link' });
   }
 };
 

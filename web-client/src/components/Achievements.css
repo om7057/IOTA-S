@@ -237,18 +237,13 @@
   position: relative;
   overflow: hidden;
   margin-top: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .progress-fill {
   background: linear-gradient(90deg, #667eea, #764ba2);
   height: 100%;
   transition: width 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
 }
 
 .progress-text {
@@ -308,5 +303,114 @@
     width: 100px;
     height: 100px;
     font-size: 2.5rem;
+  }
+}
+
+/* Modern minimal refresh */
+.achievements-container {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  min-height: auto;
+}
+
+.achievements-header {
+  text-align: left;
+  color: var(--text-main);
+  margin-bottom: 1.25rem;
+}
+
+.achievements-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  text-shadow: none;
+}
+
+.achievements-header p,
+.stat-label,
+.badge-description,
+.achievements-footer {
+  color: var(--text-muted);
+}
+
+.achievements-stats,
+.achievements-grid {
+  gap: 1rem;
+}
+
+.stat-card,
+.achievement-card,
+.achievements-footer {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 32, 0.06);
+}
+
+.stat-card:hover,
+.achievement-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-value,
+.card-content h3 {
+  color: var(--text-main);
+}
+
+.achievements-filter {
+  justify-content: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.filter-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: #43525c;
+  border-radius: 999px;
+}
+
+.filter-btn:hover {
+  background: #f5fafb;
+  transform: translateY(-1px);
+}
+
+.filter-btn.active {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  border-color: #b8dada;
+  box-shadow: none;
+}
+
+.achievement-card::before {
+  background: linear-gradient(90deg, var(--brand), var(--brand-strong));
+}
+
+.badge-icon {
+  background: #f7fbfc;
+}
+
+.points {
+  background: var(--brand);
+}
+
+.unlocked-info {
+  background: #e8f6ee;
+  color: #1a6f44;
+}
+
+.achievements-loading {
+  background: transparent;
+  color: var(--text-main);
+}
+
+@media (max-width: 768px) {
+  .achievements-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .achievements-grid {
+    grid-template-columns: 1fr;
   }
 }

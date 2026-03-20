@@ -314,7 +314,7 @@ export const getUserProgress = async (req, res, next) => {
       });
     }
 
-    // TODO: In Phase 4, add actual progress tracking from Mood, Journal, Story models
+    // TODO: In Phase 4+, add actual progress tracking from Journal, Story, StoryAttempt models
     // For now, return placeholder data
 
     logger.debug('Got user progress', { userId });
@@ -323,7 +323,6 @@ export const getUserProgress = async (req, res, next) => {
       userId,
       currentStars: user.currentStars,
       stats: {
-        moodsLogged: 0, // Will populate from Mood model
         journalsWritten: 0, // Will populate from Journal model
         storiesCompleted: 0, // Will populate from Story model
         lessonsCompleted: 0, // Will populate from Lesson model
@@ -392,7 +391,7 @@ export const updateUserAge = async (req, res, next) => {
 
     // Update age and userType
     user.age = parseInt(age);
-    user.userType = age >= 13 ? 'teen' : 'child';
+    user.userType = age >= 13 ? 'teenager' : 'child';
 
     // Save changes
     await user.save();

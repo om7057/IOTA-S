@@ -45,18 +45,6 @@ export const validators = {
     return enumValues.includes(value);
   },
 
-  // Mood validation
-  isValidMood: (mood) => {
-    const validMoods = ['happy', 'sad', 'angry', 'anxious', 'calm', 'excited', 'suspicious'];
-    return validators.isValidEnum(mood, validMoods);
-  },
-
-  // Mood intensity validation (1-10)
-  isValidMoodIntensity: (intensity) => {
-    const num = parseInt(intensity);
-    return !isNaN(num) && num >= 1 && num <= 10;
-  },
-
   // User type validation
   isValidUserType: (userType) => {
     const validTypes = ['child', 'teenager', 'counselor', 'parent'];

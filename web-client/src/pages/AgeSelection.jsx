@@ -48,36 +48,36 @@ const AgeSelection = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 p-4">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-3xl animate-slide-up">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            ✨ Welcome to IOTA!
+        <div className="text-center mb-8 sm:mb-10">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-3">
+            Welcome to IOTA
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-base sm:text-lg text-slate-600">
             Let us know your age so we can show you the perfect experience
           </p>
         </div>
 
         {/* Age Selection Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 mb-6">
           {/* Children Option (8-12) */}
           <button
             onClick={() => handleAgeSelect(10)}
             disabled={loading}
-            className={`p-8 rounded-3xl border-4 transition-all transform hover:scale-105 ${
+            className={`p-6 sm:p-7 rounded-3xl border transition-all hover:-translate-y-0.5 ${
               selectedAge === 10 || (selectedAge && selectedAge < 13)
-                ? 'border-green-500 bg-green-50 shadow-lg'
-                : 'border-green-200 bg-white hover:border-green-300 shadow'
+                ? 'border-emerald-300 bg-emerald-50/70 shadow-lg shadow-emerald-100/80'
+                : 'border-slate-200 bg-white/90 hover:border-emerald-200 shadow-md'
             } disabled:opacity-50`}
           >
-            <div className="text-6xl mb-4">👶</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-2xl flex items-center justify-center mb-4">C</div>
+            <h2 className="text-2xl font-semibold text-slate-900 mb-2">
               I'm a Kid
             </h2>
-            <p className="text-gray-600 mb-4">Ages 8-12</p>
-            <div className="text-sm text-gray-700 space-y-1">
+            <p className="text-slate-600 mb-4">Ages 8-12</p>
+            <div className="text-sm text-slate-700 space-y-1">
               <p>✓ Mood Tracking</p>
               <p>✓ My Journal</p>
               <p>✓ Safety Stories</p>
@@ -89,18 +89,18 @@ const AgeSelection = () => {
           <button
             onClick={() => handleAgeSelect(16)}
             disabled={loading}
-            className={`p-8 rounded-3xl border-4 transition-all transform hover:scale-105 ${
+            className={`p-6 sm:p-7 rounded-3xl border transition-all hover:-translate-y-0.5 ${
               selectedAge === 16 || (selectedAge && selectedAge >= 13)
-                ? 'border-purple-500 bg-purple-50 shadow-lg'
-                : 'border-purple-200 bg-white hover:border-purple-300 shadow'
+                ? 'border-indigo-300 bg-indigo-50/70 shadow-lg shadow-indigo-100/80'
+                : 'border-slate-200 bg-white/90 hover:border-indigo-200 shadow-md'
             } disabled:opacity-50`}
           >
-            <div className="text-6xl mb-4">🧑</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-indigo-100 text-2xl flex items-center justify-center mb-4">T</div>
+            <h2 className="text-2xl font-semibold text-slate-900 mb-2">
               I'm a Teen
             </h2>
-            <p className="text-gray-600 mb-4">Ages 13+</p>
-            <div className="text-sm text-gray-700 space-y-1">
+            <p className="text-slate-600 mb-4">Ages 13+</p>
+            <div className="text-sm text-slate-700 space-y-1">
               <p>✓ All Kid Features</p>
               <p>✓ Express Yourself</p>
               <p>✓ Community Circles</p>
@@ -110,9 +110,9 @@ const AgeSelection = () => {
         </div>
 
         {/* Custom Age Input */}
-        <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 text-center">
-          <p className="text-gray-600 mb-4">Or enter your exact age:</p>
-          <div className="flex gap-2 justify-center items-center">
+        <div className="card rounded-2xl p-5 sm:p-6 text-center border-slate-200">
+          <p className="text-slate-600 mb-4">Or enter your exact age</p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center items-center">
             <input
               type="number"
               min="8"
@@ -122,7 +122,7 @@ const AgeSelection = () => {
                 const val = e.target.value;
                 if (val) setSelectedAge(parseInt(val));
               }}
-              className="w-24 px-4 py-2 border-2 border-gray-300 rounded-lg text-center text-xl font-bold focus:outline-none focus:border-sky-600"
+              className="input w-full sm:w-28 text-center text-xl font-semibold"
             />
             <button
               onClick={() => {
@@ -133,7 +133,7 @@ const AgeSelection = () => {
                 }
               }}
               disabled={loading || !selectedAge}
-              className="px-6 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
+              className="btn btn-primary w-full sm:w-auto disabled:opacity-50"
             >
               {loading ? 'Saving...' : 'Continue'}
             </button>
@@ -141,9 +141,9 @@ const AgeSelection = () => {
         </div>
 
         {/* Info Footer */}
-        <div className="text-center mt-8 text-sm text-gray-600">
+        <div className="text-center mt-6 text-sm text-slate-600">
           <p>Your age will help us personalize your experience</p>
-          <p className="mt-1">You can change this anytime in your profile settings</p>
+          <p className="mt-1">You can change this anytime in your profile settings.</p>
         </div>
       </div>
     </div>

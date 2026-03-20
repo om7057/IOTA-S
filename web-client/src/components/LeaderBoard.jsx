@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Trophy, Medal, Award, Info, Users, RefreshCw } from "lucide-react";
 
 const Leaderboard = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
   const [users, setUsers] = useState([]);
   const [scores, setScores] = useState([]);
   const [stories, setStories] = useState([]);
@@ -15,32 +15,31 @@ const Leaderboard = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        console.log("📢 Fetching initial leaderboard data...");
         const responses = await Promise.all([
           fetch(`${apiUrl}/users`),
           fetch(`${apiUrl}/stories`),
-          fetch(`${apiUrl}/leaderboard`),
+          fetch(`${apiUrl}/leaderboards`),
         ]);
 
         if (responses.some((res) => !res.ok)) {
-          throw new Error("❌ One or more API requests failed.");
+          throw new Error("One or more API requests failed.");
         }
 
         const [usersData, storiesData, leaderboardData] = await Promise.all(
           responses.map((res) => res.json())
         );
 
-        console.log("✅ Users fetched:", usersData);
-        console.log("✅ Stories fetched:", storiesData);
-        console.log("✅ Leaderboard fetched:", leaderboardData);
+        const normalizedUsers = usersData?.users || [];
+        const normalizedStories = storiesData?.stories || [];
+        const normalizedLeaderboard = leaderboardData?.data || [];
 
-        setUsers(usersData);
-        setStories(storiesData);
-        setScores(leaderboardData);
-        setFilteredScores(leaderboardData);
+        setUsers(normalizedUsers);
+        setStories(normalizedStories);
+        setScores(normalizedLeaderboard);
+        setFilteredScores(normalizedLeaderboard);
         setErrorMessage("");
       } catch (err) {
-        console.error("❌ Error fetching initial data:", err);
+        console.error("Error fetching initial data:", err);
         setErrorMessage("Oops! We couldn't load the learning heroes board. Try again later!");
       } finally {
         setIsLoading(false);
@@ -54,29 +53,25 @@ const Leaderboard = () => {
     const fetchLeaderboard = async () => {
       setIsLoading(true);
       try {
-        let url = "http://localhost:3000/api/leaderboard";
-        if (selectedStory) {
-          url = `http://localhost:3000/api/leaderboard/story/${selectedStory}`;
-        }
+        const url = new URL(`${apiUrl}/leaderboards`);
+        if (selectedStory) url.searchParams.set("storyId", selectedStory);
 
-        console.log(`📢 Fetching leaderboard for story: ${selectedStory || "All"}`);
-
-        const res = await fetch(url);
+        const res = await fetch(url.toString());
         const data = await res.json();
 
         if (!res.ok) {
-          console.error("❌ Error loading leaderboard:", data.error || "Unknown error");
+          console.error("Error loading leaderboard:", data.error || "Unknown error");
           setFilteredScores([]);
           setErrorMessage("No learning heroes found for this topic yet. Be the first one!");
           return;
         }
 
-        console.log("✅ Leaderboard updated:", data);
-        setScores(data);
-        setFilteredScores(data);
+        const normalizedData = data?.data || [];
+        setScores(normalizedData);
+        setFilteredScores(normalizedData);
         setErrorMessage("");
       } catch (err) {
-        console.error("❌ Error fetching leaderboard:", err);
+        console.error("Error fetching leaderboard:", err);
         setFilteredScores([]);
         setErrorMessage("No learning heroes found for this topic yet. Be the first one!");
       } finally {
@@ -87,15 +82,10 @@ const Leaderboard = () => {
     fetchLeaderboard();
   }, [selectedStory]);
 
-  useEffect(() => {
-    console.log("📊 Scores state updated:", scores);
-    console.log("📊 Filtered Scores updated:", filteredScores);
-  }, [scores, filteredScores]);
-
   const getUser = (userId) => {
     if (!userId) return null;
-    if (typeof userId === "object" && userId._id) return userId;
-    return users.find((u) => u._id === userId) || null;
+    if (typeof userId === "object") return userId;
+    return users.find((u) => u.id === userId || u._id === userId) || null;
   };
 
   const getRankIcon = (index) => {
@@ -137,7 +127,7 @@ const Leaderboard = () => {
           >
             <option value="">All Topics</option>
             {stories.map((s) => (
-              <option key={s._id} value={s._id}>
+              <option key={s.id || s._id} value={s.id || s._id}>
                 {s.title}
               </option>
             ))}
@@ -167,10 +157,10 @@ const Leaderboard = () => {
             ) : filteredScores.length > 0 ? (
               <div className="space-y-3">
                 {filteredScores.map((entry, index) => {
-                  const user = getUser(entry.userId);
+                  const user = entry.user || getUser(entry.userId);
                   return (
                     <div 
-                      key={entry._id || entry.userId} 
+                      key={entry.id || entry._id || entry.userId} 
                       className={`flex items-center gap-4 p-4 rounded-xl transition-all ${
                         index < 3 ? 'bg-slate-50' : 'bg-white hover:bg-slate-50 border border-gray-100'
                       }`}
@@ -182,24 +172,24 @@ const Leaderboard = () => {
                       
                       {/* Avatar */}
                       <div className="relative">
-                        {user?.imageUrl ? (
+                        {user?.avatar || user?.imageUrl || user?.avatarUrl ? (
                           <img
-                            src={user.imageUrl}
-                            alt={user.username}
+                            src={user.avatar || user.imageUrl || user.avatarUrl}
+                            alt={user.username || user.displayName || user.firstName || "User avatar"}
                             className={`w-12 h-12 rounded-full border-2 ${
                               index === 0 ? 'border-amber-400' : index === 1 ? 'border-gray-400' : index === 2 ? 'border-amber-600' : 'border-gray-200'
                             }`}
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-bold">
-                            {user?.username?.charAt(0)?.toUpperCase() || '?'}
+                            {(user?.username || user?.displayName || user?.firstName || "?").charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
                       
                       {/* Name & Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{user?.username || "Mystery Hero"}</p>
+                        <p className="font-semibold text-gray-900 truncate">{user?.username || user?.displayName || user?.firstName || "Mystery Hero"}</p>
                         {selectedStory && entry.topic?.name && (
                           <p className="text-sm text-gray-500 truncate">
                             {entry.topic?.name} • Level {entry.level?.levelNumber || 1}
@@ -210,7 +200,7 @@ const Leaderboard = () => {
                       {/* Score */}
                       <div className="text-right">
                         <p className="text-2xl font-bold text-sky-600">
-                          {entry.totalScore || entry.score || 0}
+                          {entry.totalPoints || entry.totalScore || entry.score || 0}
                         </p>
                         <p className="text-xs text-gray-500">points</p>
                       </div>

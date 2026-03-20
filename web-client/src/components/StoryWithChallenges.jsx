@@ -5,6 +5,12 @@ import StoryEmotionMonitor from "./StoryEmotionMonitor";
 import EmotionSummary from "./EmotionSummary";
 import { Loader2, AlertCircle, ChevronLeft, ChevronRight, CheckCircle, XCircle } from "lucide-react";
 
+const normalizeOptionText = (text = '') =>
+  String(text)
+    .replace(/^[\s\uFE0F\u200D\p{Extended_Pictographic}✓✔✗✕☑☒]+/gu, '')
+    .replace(/^[-:.)\]]+\s*/, '')
+    .trim();
+
 const StoryWithChallenges = () => {
   const { lessonId } = useParams();
   const navigate = useNavigate();
@@ -293,7 +299,7 @@ const StoryWithChallenges = () => {
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   )}
                 </div>
-                <span className="font-medium text-gray-900">{option.text}</span>
+                <span className="font-medium text-gray-900">{normalizeOptionText(option.text)}</span>
                 {feedbackMessage && option.correct && (
                   <CheckCircle className="w-5 h-5 text-emerald-600 ml-auto" />
                 )}

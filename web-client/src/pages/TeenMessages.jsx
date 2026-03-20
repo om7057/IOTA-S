@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const TeenMessages = () => {
+  const { user, token } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -10,45 +14,70 @@ const TeenMessages = () => {
   const [loading, setLoading] = useState(false);
   const [showCounselorList, setShowCounselorList] = useState(false);
 
-  useEffect(() => {
-    fetchConversations();
-    fetchVerifiedCounselors();
-  }, []);
+  const authHeaders = () => {
+    const accessToken = token || localStorage.getItem('token');
+    return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+  };
 
   useEffect(() => {
-    if (selectedConversation) {
-      fetchMessages(selectedConversation.userId);
+    if (!user?.id) return;
+    fetchConversations();
+    fetchVerifiedCounselors();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (selectedConversation?.conversationId) {
+      fetchMessages(selectedConversation.conversationId);
     }
-  }, [selectedConversation]);
+  }, [selectedConversation?.conversationId]);
+
+  const getDisplayName = (u) => {
+    if (!u) return 'Unknown';
+    return u.username || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Unknown';
+  };
 
   const fetchConversations = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get('/api/teen/messages/messages/conversations', {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(`${API_URL}/messages`, {
+        headers: authHeaders(),
       });
-      setConversations(response.data);
+
+      const rows = response.data?.data || [];
+      const mapped = rows.map((conv) => {
+        const isUser1 = conv.user1Id === user?.id;
+        const other = isUser1 ? conv.user2 : conv.user1;
+        return {
+          conversationId: conv.id,
+          userId: other?.id,
+          otherUser: {
+            ...other,
+            name: getDisplayName(other),
+          },
+          lastMessage: 'Open to view latest messages',
+          unreadCount: 0,
+        };
+      });
+
+      setConversations(mapped);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+      setConversations([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMessages = async (otherUserId) => {
+  const fetchMessages = async (conversationId) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/teen/messages/messages/${otherUserId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.get(`${API_URL}/messages/${conversationId}/messages`, {
+        headers: authHeaders(),
       });
-      setMessages(response.data.messages);
-      
-      // Mark as read
-      markConversationAsRead(otherUserId);
+      setMessages(response.data?.data || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
+      setMessages([]);
     } finally {
       setLoading(false);
     }
@@ -56,42 +85,33 @@ const TeenMessages = () => {
 
   const fetchVerifiedCounselors = async () => {
     try {
-      const response = await axios.get('/api/teen/messages/counselors/verified');
-      setCounselors(response.data);
+      const response = await axios.get(`${API_URL}/users?limit=200`);
+      const allUsers = response.data?.users || [];
+      const counselorUsers = allUsers.filter((u) => u.userType === 'counselor');
+      setCounselors(counselorUsers);
     } catch (error) {
       console.error('Error fetching counselors:', error);
-    }
-  };
-
-  const markConversationAsRead = async (otherUserId) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.patch(
-        `/api/teen/messages/messages/${otherUserId}/read-all`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-    } catch (error) {
-      console.error('Error marking as read:', error);
+      setCounselors([]);
     }
   };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!messageContent.trim() || !selectedConversation) return;
+    if (!messageContent.trim() || !selectedConversation?.conversationId) return;
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       await axios.post(
-        `/api/teen/messages/messages/${selectedConversation.userId}`,
+        `${API_URL}/messages/${selectedConversation.conversationId}/send`,
         { content: messageContent },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: authHeaders() }
       );
       setMessageContent('');
-      fetchMessages(selectedConversation.userId);
+      fetchMessages(selectedConversation.conversationId);
+      fetchConversations();
     } catch (error) {
       console.error('Error sending message:', error);
+      alert(error.response?.data?.error || 'Failed to send message');
     } finally {
       setLoading(false);
     }
@@ -99,38 +119,36 @@ const TeenMessages = () => {
 
   const handleStartConversation = async (counselor) => {
     try {
-      const token = localStorage.getItem('token');
-      // Create initial message with counselor
-      await axios.post(
-        `/api/teen/messages/messages/${counselor.User.id}`,
-        { content: 'Hi, I would like to chat with you.' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setShowCounselorList(false);
-      setSelectedConversation({
-        userId: counselor.User.id,
-        otherUser: counselor.User
+      const response = await axios.get(`${API_URL}/messages/user/${counselor.id}`, {
+        headers: authHeaders(),
       });
+
+      const payload = response.data?.data;
+      const conversation = payload?.conversation;
+
+      if (!conversation) return;
+
+      const selected = {
+        conversationId: conversation.id,
+        userId: counselor.id,
+        otherUser: {
+          ...counselor,
+          name: getDisplayName(counselor),
+        },
+      };
+
+      setShowCounselorList(false);
+      setSelectedConversation(selected);
+      setMessages(payload?.messages || []);
       fetchConversations();
     } catch (error) {
       console.error('Error starting conversation:', error);
+      alert(error.response?.data?.error || 'Failed to start conversation');
     }
   };
 
-  const handleDeleteMessage = async (messageId) => {
-    if (!window.confirm('Delete this message?')) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(
-        `/api/teen/messages/messages/${messageId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchMessages(selectedConversation.userId);
-    } catch (error) {
-      console.error('Error deleting message:', error);
-    }
+  const isOwnMessage = (message) => {
+    return message.senderId === user?.id;
   };
 
   return (
@@ -139,7 +157,6 @@ const TeenMessages = () => {
         <h1 className="text-4xl font-bold text-gray-800 mb-8">Messages</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Conversations Sidebar */}
           <div className="lg:col-span-1">
             <button
               onClick={() => setShowCounselorList(!showCounselorList)}
@@ -150,10 +167,10 @@ const TeenMessages = () => {
 
             {showCounselorList && (
               <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Verified Counselors</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Counselors</h3>
                 <div className="space-y-3">
                   {counselors.length === 0 ? (
-                    <p className="text-gray-600 text-sm">No verified counselors available</p>
+                    <p className="text-gray-600 text-sm">No counselors available</p>
                   ) : (
                     counselors.map((counselor) => (
                       <button
@@ -161,10 +178,8 @@ const TeenMessages = () => {
                         onClick={() => handleStartConversation(counselor)}
                         className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
                       >
-                        <div className="font-semibold text-gray-800">{counselor.User.name}</div>
-                        <div className="text-xs text-teal-600 mt-1">
-                          ✓ {counselor.verificationType}
-                        </div>
+                        <div className="font-semibold text-gray-800">{getDisplayName(counselor)}</div>
+                        <div className="text-xs text-teal-600 mt-1">✓ counselor</div>
                       </button>
                     ))
                   )}
@@ -180,10 +195,10 @@ const TeenMessages = () => {
                 ) : (
                   conversations.map((conv) => (
                     <button
-                      key={conv.userId}
+                      key={conv.conversationId}
                       onClick={() => setSelectedConversation(conv)}
                       className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                        selectedConversation?.userId === conv.userId
+                        selectedConversation?.conversationId === conv.conversationId
                           ? 'bg-teal-500 text-white'
                           : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                       }`}
@@ -191,14 +206,10 @@ const TeenMessages = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="font-semibold">{conv.otherUser?.name || 'Unknown'}</div>
-                          <div className="text-xs opacity-75 line-clamp-1 mt-1">
-                            {conv.lastMessage}
-                          </div>
+                          <div className="text-xs opacity-75 line-clamp-1 mt-1">{conv.lastMessage}</div>
                         </div>
                         {conv.unreadCount > 0 && (
-                          <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                            {conv.unreadCount}
-                          </span>
+                          <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">{conv.unreadCount}</span>
                         )}
                       </div>
                     </button>
@@ -208,29 +219,22 @@ const TeenMessages = () => {
             </div>
           </div>
 
-          {/* Messages Area */}
           <div className="lg:col-span-2">
             {!selectedConversation ? (
               <div className="bg-white rounded-lg shadow-md p-12 text-center h-full flex items-center justify-center">
                 <div>
                   <p className="text-gray-600 text-lg mb-2">No conversation selected</p>
-                  <p className="text-gray-500">
-                    Click on a conversation or start a new message to get started
-                  </p>
+                  <p className="text-gray-500">Click on a conversation or start a new message to get started</p>
                 </div>
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-6 flex flex-col h-full max-h-96 lg:max-h-[600px]">
-                {/* Header */}
                 <div className="flex items-center justify-between pb-4 border-b border-gray-200 mb-4">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-800">
-                      {selectedConversation.otherUser?.name || 'Unknown'}
-                    </h2>
+                    <h2 className="text-2xl font-bold text-gray-800">{selectedConversation.otherUser?.name || 'Unknown'}</h2>
                   </div>
                 </div>
 
-                {/* Messages */}
                 <div className="flex-1 overflow-y-auto mb-6 space-y-4">
                   {messages.length === 0 ? (
                     <div className="text-center text-gray-500 h-full flex items-center justify-center">
@@ -238,26 +242,15 @@ const TeenMessages = () => {
                     </div>
                   ) : (
                     messages.map((message) => {
-                      const isOwn = message.senderId === parseInt(localStorage.getItem('userId') || 0);
+                      const isOwn = isOwnMessage(message);
                       return (
-                        <div
-                          key={message.id}
-                          className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={`max-w-xs rounded-lg p-4 ${
-                              isOwn
-                                ? 'bg-teal-500 text-white'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
-                          >
+                        <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-xs rounded-lg p-4 ${isOwn ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-800'}`}>
                             <p className="break-words">{message.content}</p>
-                            <span className={`text-xs mt-2 block ${
-                              isOwn ? 'text-teal-100' : 'text-gray-500'
-                            }`}>
+                            <span className={`text-xs mt-2 block ${isOwn ? 'text-teal-100' : 'text-gray-500'}`}>
                               {new Date(message.createdAt).toLocaleTimeString([], {
                                 hour: '2-digit',
-                                minute: '2-digit'
+                                minute: '2-digit',
                               })}
                             </span>
                           </div>
@@ -267,7 +260,6 @@ const TeenMessages = () => {
                   )}
                 </div>
 
-                {/* Message Input */}
                 <form onSubmit={handleSendMessage} className="space-y-3 border-t border-gray-200 pt-4">
                   <div className="flex gap-3">
                     <textarea

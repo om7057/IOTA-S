@@ -88,17 +88,26 @@ export const getGroupChatHistory = async (req, res) => {
         {
           model: User,
           as: 'sender',
-          attributes: ['id', 'username', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
       ],
       order: [['createdAt', 'DESC']],
       limit: Math.min(parseInt(limit) || 50, 200),
     });
 
+    const normalizedMessages = messages.reverse().map((message) => {
+      const raw = message.toJSON();
+      if (raw.sender) {
+        raw.sender.username = `${raw.sender.firstName || ''} ${raw.sender.lastName || ''}`.trim() || raw.sender.email || 'Learner';
+        raw.sender.avatar = raw.sender.avatarUrl || null;
+      }
+      return raw;
+    });
+
     res.json({
       success: true,
-      data: messages.reverse(),
-      total: messages.length,
+      data: normalizedMessages,
+      total: normalizedMessages.length,
     });
   } catch (error) {
     console.error('GetGroupChatHistory error:', error);

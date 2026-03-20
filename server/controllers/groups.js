@@ -1,4 +1,5 @@
 import { Group, GroupMember, User } from '../models/index.js';
+import { Op } from 'sequelize';
 
 /**
  * Create a new group
@@ -51,13 +52,11 @@ export const createGroup = async (req, res) => {
  */
 export const getAllGroups = async (req, res) => {
   try {
-    const { type, category, search } = req.query;
+    const { type, category } = req.query;
     const where = { isActive: true };
 
     if (type) where.type = type;
     if (category) where.category = category;
-
-    let { Op } = require('sequelize');
 
     const groups = await Group.findAll({
       where,
@@ -65,7 +64,7 @@ export const getAllGroups = async (req, res) => {
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'username', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
         {
           model: GroupMember,
@@ -79,7 +78,14 @@ export const getAllGroups = async (req, res) => {
 
     res.json({
       success: true,
-      data: groups,
+      data: groups.map((group) => {
+        const raw = group.toJSON();
+        if (raw.creator) {
+          raw.creator.username = `${raw.creator.firstName || ''} ${raw.creator.lastName || ''}`.trim() || raw.creator.email || 'Learner';
+          raw.creator.avatar = raw.creator.avatarUrl || null;
+        }
+        return raw;
+      }),
       total: groups.length,
     });
   } catch (error) {
@@ -98,12 +104,20 @@ export const getGroupById = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const uuidV4Like = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidV4Like.test(id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid group id format',
+      });
+    }
+
     const group = await Group.findByPk(id, {
       include: [
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'username', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
         {
           model: GroupMember,
@@ -112,7 +126,7 @@ export const getGroupById = async (req, res) => {
             {
               model: User,
               as: 'user',
-              attributes: ['id', 'username', 'avatar'],
+              attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
             },
           ],
         },
@@ -126,7 +140,22 @@ export const getGroupById = async (req, res) => {
       });
     }
 
-    res.json({ success: true, data: group });
+    const raw = group.toJSON();
+    if (raw.creator) {
+      raw.creator.username = `${raw.creator.firstName || ''} ${raw.creator.lastName || ''}`.trim() || raw.creator.email || 'Learner';
+      raw.creator.avatar = raw.creator.avatarUrl || null;
+    }
+    if (Array.isArray(raw.members)) {
+      raw.members = raw.members.map((member) => {
+        if (member.user) {
+          member.user.username = `${member.user.firstName || ''} ${member.user.lastName || ''}`.trim() || member.user.email || 'Learner';
+          member.user.avatar = member.user.avatarUrl || null;
+        }
+        return member;
+      });
+    }
+
+    res.json({ success: true, data: raw });
   } catch (error) {
     console.error('GetGroupById error:', error);
     res.status(500).json({
@@ -389,14 +418,21 @@ export const getUserGroups = async (req, res) => {
             {
               model: User,
               as: 'creator',
-              attributes: ['id', 'username', 'avatar'],
+              attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
             },
           ],
         },
       ],
     });
 
-    const groups = memberships.map(m => ({ ...m.group.toJSON(), userRole: m.role }));
+    const groups = memberships.map((m) => {
+      const raw = m.group.toJSON();
+      if (raw.creator) {
+        raw.creator.username = `${raw.creator.firstName || ''} ${raw.creator.lastName || ''}`.trim() || raw.creator.email || 'Learner';
+        raw.creator.avatar = raw.creator.avatarUrl || null;
+      }
+      return { ...raw, userRole: m.role };
+    });
 
     res.json({
       success: true,
@@ -412,6 +448,106 @@ export const getUserGroups = async (req, res) => {
   }
 };
 
+/**
+ * Suggest groups for current user (dummy profile-based response for now)
+ */
+export const suggestGroups = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    let memberGroupIds = [];
+    try {
+      if (userId) {
+        const memberships = await GroupMember.findAll({
+          where: { userId },
+          attributes: ['groupId'],
+        });
+        memberGroupIds = memberships.map((m) => m.groupId);
+      }
+    } catch (membershipError) {
+      console.warn('SuggestGroups membership lookup fallback:', membershipError?.message || membershipError);
+      memberGroupIds = [];
+    }
+
+    const where = {
+      isActive: true,
+      type: { [Op.ne]: 'private' },
+    };
+
+    if (memberGroupIds.length > 0) {
+      where.id = { [Op.notIn]: memberGroupIds };
+    }
+
+    let candidateGroups = [];
+    try {
+      candidateGroups = await Group.findAll({
+        where,
+        include: [
+          {
+            model: User,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
+          },
+        ],
+        order: [['memberCount', 'DESC']],
+        limit: 3,
+      });
+    } catch (primaryQueryError) {
+      console.warn('SuggestGroups primary query fallback:', primaryQueryError?.message || primaryQueryError);
+      candidateGroups = await Group.findAll({
+        where: { isActive: true },
+        order: [['createdAt', 'DESC']],
+        limit: 3,
+      });
+    }
+
+    // Dummy ranking/explanation layer for now. Later this will use an AI model.
+    const reasons = [
+      'Matches your recent activity and interests.',
+      'Popular among teens with a similar learning path.',
+      'Good starter community based on your profile.',
+    ];
+
+    const suggestions = candidateGroups.map((group, index) => {
+      const raw = group.toJSON();
+      if (raw.creator) {
+        raw.creator.username = `${raw.creator.firstName || ''} ${raw.creator.lastName || ''}`.trim() || raw.creator.email || 'Learner';
+        raw.creator.avatar = raw.creator.avatarUrl || null;
+      }
+
+      return {
+        ...raw,
+        reason: reasons[index % reasons.length],
+        confidence: Math.max(65, 92 - index * 9),
+      };
+    });
+
+    res.json({
+      success: true,
+      analyzing: false,
+      profileUsed: {
+        age: req.user?.age || null,
+        userType: req.user?.userType || null,
+      },
+      data: suggestions,
+      total: suggestions.length,
+    });
+  } catch (error) {
+    console.error('SuggestGroups error:', error);
+    // Graceful fallback so UI still works even if recommendation logic fails.
+    res.json({
+      success: true,
+      analyzing: false,
+      profileUsed: {
+        age: req.user?.age || null,
+        userType: req.user?.userType || null,
+      },
+      data: [],
+      total: 0,
+    });
+  }
+};
+
 export default {
   createGroup,
   getAllGroups,
@@ -422,4 +558,5 @@ export default {
   leaveGroup,
   updateMemberRole,
   getUserGroups,
+  suggestGroups,
 };

@@ -1,5 +1,6 @@
-import { Leaderboard, User, QuizProgress, UserStoryProgress, Mood } from '../models/index.js';
+import { Leaderboard, User, QuizProgress, UserStoryProgress } from '../models/index.js';
 import { sequelize } from '../models/index.js';
+import { Op } from 'sequelize';
 
 /**
  * Get leaderboard by period
@@ -15,16 +16,35 @@ export const getLeaderboard = async (req, res) => {
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'username', 'avatar', 'age'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'age', 'email'],
         },
       ],
       order: [['totalPoints', 'DESC']],
       limit: maxLimit,
     });
 
+    const normalized = entries.map((entry) => {
+      const raw = entry.toJSON();
+      const user = raw.user || null;
+      const username = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Learner'
+        : 'Learner';
+
+      return {
+        ...raw,
+        user: user
+          ? {
+              ...user,
+              username,
+              avatar: user.avatarUrl || null,
+            }
+          : null,
+      };
+    });
+
     res.json({
       success: true,
-      data: entries,
+      data: normalized,
     });
   } catch (error) {
     console.error('GetLeaderboard error:', error);
@@ -49,21 +69,47 @@ export const getUserRank = async (req, res) => {
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'username', 'avatar', 'age'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'age', 'email'],
         },
       ],
     });
 
     if (!entry) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not in leaderboard',
+      return res.json({
+        success: true,
+        data: {
+          userId,
+          period,
+          rank: null,
+          totalPoints: 0,
+          quizzesCompleted: 0,
+          storiesCompleted: 0,
+          journalCount: 0,
+          moodLogsCount: 0,
+          streak: 0,
+          user: null,
+        },
       });
     }
 
+    const raw = entry.toJSON();
+    const user = raw.user || null;
+    const username = user
+      ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Learner'
+      : 'Learner';
+
     res.json({
       success: true,
-      data: entry,
+      data: {
+        ...raw,
+        user: user
+          ? {
+              ...user,
+              username,
+              avatar: user.avatarUrl || null,
+            }
+          : null,
+      },
     });
   } catch (error) {
     console.error('GetUserRank error:', error);
@@ -102,7 +148,7 @@ export const updateLeaderboard = async (req, res) => {
         const quizzes = await QuizProgress.findAll({
           where: {
             userId: user.id,
-            completedAt: { [sequelize.Sequelize.Op.gte]: startDate },
+            completedAt: { [Op.gte]: startDate },
           },
         });
 
@@ -110,20 +156,13 @@ export const updateLeaderboard = async (req, res) => {
           where: {
             userId: user.id,
             status: 'completed',
-            completedAt: { [sequelize.Sequelize.Op.gte]: startDate },
-          },
-        });
-
-        const moods = await Mood.findAll({
-          where: {
-            userId: user.id,
-            createdAt: { [sequelize.Sequelize.Op.gte]: startDate },
+            completedAt: { [Op.gte]: startDate },
           },
         });
 
         const totalQuizPoints = quizzes.reduce((sum, q) => sum + q.pointsEarned, 0);
         const totalStoryPoints = stories.reduce((sum, s) => sum + s.pointsEarned, 0);
-        const moodPoints = moods.length * 5; // 5 points per mood log
+        const moodPoints = 0;
 
         const totalPoints = totalQuizPoints + totalStoryPoints + moodPoints;
 
@@ -135,7 +174,7 @@ export const updateLeaderboard = async (req, res) => {
             quizzesCompleted: new Set(quizzes.map(q => q.quizId)).size,
             storiesCompleted: stories.length,
             journalCount: 0, // TODO: Add journal count
-            moodLogsCount: moods.length,
+            moodLogsCount: 0,
             streak: 0, // TODO: Calculate streak
             lastActivityAt: new Date(),
             periodStartAt: startDate,

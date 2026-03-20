@@ -8,29 +8,19 @@ export const createDiscussion = async (req, res) => {
     const { groupId, title, content, tags } = req.body;
     const userId = req.user.id;
 
-    if (!groupId || !title || !content) {
+    if (!groupId || !content) {
       return res.status(400).json({
         success: false,
-        error: 'Group ID, title, and content are required',
+        error: 'Group ID and content are required',
       });
     }
 
-    // Verify user is member of group
-    const isMember = await GroupMember.findOne({
-      where: { groupId, userId },
-    });
-
-    if (!isMember) {
-      return res.status(403).json({
-        success: false,
-        error: 'You must be a member of the group to create discussions',
-      });
-    }
+    const safeTitle = (title || '').trim() || `${content.trim().slice(0, 60)}${content.trim().length > 60 ? '...' : ''}` || 'General Post';
 
     const discussion = await Discussion.create({
       groupId,
       creatorId: userId,
-      title,
+      title: safeTitle.length >= 5 ? safeTitle : 'General Post',
       content,
       tags: tags || [],
       lastActivityAt: new Date(),
@@ -80,7 +70,7 @@ export const getGroupDiscussions = async (req, res) => {
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'username', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
       ],
       order,
@@ -88,7 +78,14 @@ export const getGroupDiscussions = async (req, res) => {
 
     res.json({
       success: true,
-      data: discussions,
+      data: discussions.map((discussion) => {
+        const raw = discussion.toJSON();
+        if (raw.creator) {
+          raw.creator.username = `${raw.creator.firstName || ''} ${raw.creator.lastName || ''}`.trim() || raw.creator.email || 'Learner';
+          raw.creator.avatar = raw.creator.avatarUrl || null;
+        }
+        return raw;
+      }),
       total: discussions.length,
     });
   } catch (error) {
@@ -112,7 +109,7 @@ export const getDiscussionById = async (req, res) => {
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'username', 'avatar'],
+          attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
         },
         {
           model: DiscussionReply,
@@ -121,7 +118,7 @@ export const getDiscussionById = async (req, res) => {
             {
               model: User,
               as: 'creator',
-              attributes: ['id', 'username', 'avatar'],
+              attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'],
             },
           ],
           order: [['createdAt', 'ASC']],
@@ -140,7 +137,22 @@ export const getDiscussionById = async (req, res) => {
     discussion.viewCount = (discussion.viewCount || 0) + 1;
     await discussion.save();
 
-    res.json({ success: true, data: discussion });
+    const raw = discussion.toJSON();
+    if (raw.creator) {
+      raw.creator.username = `${raw.creator.firstName || ''} ${raw.creator.lastName || ''}`.trim() || raw.creator.email || 'Learner';
+      raw.creator.avatar = raw.creator.avatarUrl || null;
+    }
+    if (Array.isArray(raw.replies)) {
+      raw.replies = raw.replies.map((reply) => {
+        if (reply.creator) {
+          reply.creator.username = `${reply.creator.firstName || ''} ${reply.creator.lastName || ''}`.trim() || reply.creator.email || 'Learner';
+          reply.creator.avatar = reply.creator.avatarUrl || null;
+        }
+        return reply;
+      });
+    }
+
+    res.json({ success: true, data: raw });
   } catch (error) {
     console.error('GetDiscussionById error:', error);
     res.status(500).json({

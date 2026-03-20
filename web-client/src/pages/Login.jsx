@@ -89,23 +89,23 @@ const Login = () => {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6">
+      <div className="w-full max-w-md animate-slide-up">
         {/* Logo Section */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-600 shadow-lg mb-4">
+        <div className="mb-7 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-700 to-teal-600 shadow-xl shadow-teal-900/25 mb-4">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Safe Space</h1>
-          <p className="text-gray-600">Learn & Stay Safe</p>
+          <h1 className="text-3xl font-semibold text-slate-900 mb-1">Safe Space</h1>
+          <p className="text-slate-600">Learn smart. Stay safe.</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Welcome Back</h2>
-          <p className="text-gray-600 text-center mb-8">Sign in to continue to Safe Space</p>
+        <div className="card p-6 sm:p-8 border-slate-200/90">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-2 text-center">Welcome Back</h2>
+          <p className="text-slate-600 text-center mb-7">Sign in to continue to Safe Space</p>
 
           {/* OAuth Buttons */}
           <div className="space-y-3">
@@ -123,37 +123,39 @@ const Login = () => {
 
           {/* Divider */}
           <div className="my-6 flex items-center gap-4">
-            <div className="flex-1 h-px bg-gray-200"></div>
-            <span className="text-sm text-gray-500">Or</span>
-            <div className="flex-1 h-px bg-gray-200"></div>
+            <div className="flex-1 h-px bg-slate-200"></div>
+            <span className="text-sm text-slate-500">Or</span>
+            <div className="flex-1 h-px bg-slate-200"></div>
           </div>
 
           {/* Email Login (Optional) */}
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
               <input
                 type="email"
                 placeholder="you@example.com"
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-sky-500 focus:border-transparent outline-none"
+                className="input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <button className="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors duration-200">
+            <button className="w-full btn btn-primary">
               Sign in with Email
             </button>
           </div>
 
           {/* Footer */}
-          <p className="text-center text-sm text-gray-600 mt-6">
+          <p className="text-center text-sm text-slate-600 mt-6">
             By signing in, you agree to our<br />
-            <a href="#" className="text-sky-600 hover:text-sky-700 font-medium">Terms of Service</a> and{" "}
-            <a href="#" className="text-sky-600 hover:text-sky-700 font-medium">Privacy Policy</a>
+            <a href="#" className="text-teal-700 hover:text-teal-800 font-medium">Terms of Service</a> and{" "}
+            <a href="#" className="text-teal-700 hover:text-teal-800 font-medium">Privacy Policy</a>
           </p>
         </div>
 
         {/* Additional Info */}
-        <div className="mt-6 bg-slate-800 rounded-2xl p-6 text-white text-center">
-          <p className="text-sm mb-2">🛡️ Your data is encrypted and secure</p>
+        <div className="mt-5 bg-[#172530] rounded-2xl p-5 text-white text-center border border-white/10">
+          <p className="text-sm mb-2">Your data is encrypted and secure</p>
           <p className="text-xs text-gray-400">Designed for children aged 5-19</p>
         </div>
       </div>

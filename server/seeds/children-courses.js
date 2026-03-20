@@ -107,103 +107,361 @@ export const seedChildrenCourses = async () => {
 
     await createBranchingLesson({
       unitId: sexualAbuseUnit.id,
-      title: 'Arav and the Stranger Offer',
-      description: 'Arav is approached by a stranger. Choose what he should do.',
+      title: 'Arav and the Stranger Offer - Complete Story',
+      description: 'A complete interactive story showing safe choices and their outcomes.',
       content:
-        'Arav is leaving school when a stranger says, "Your parents asked me to pick you up." Help Arav make safe decisions.',
+        'Arav is 9 years old. Today after school, someone he does not know approaches him with an offer to go home in their car. Follow Arav\'s journey through different scenarios as he learns about safety and trusted adults.',
       imageSrc: '/a1.jpg',
       order: 1,
-      duration: 8,
+      duration: 12,
       nodes: [
+        // Scene 1: Initial Contact - The Stranger Approach
         {
-          key: 'abuse_start',
+          key: 'a1_school_exit',
           order: 1,
           imageSrc: '/a1.jpg',
-          question: 'A stranger says they will drop you home. What should Arav do?',
-          hint: 'Safe children do not go with strangers.',
+          question: 'SCENE 1: School Exit - A man approaches Arav at the gate.\n\nThe stranger says: "Hi Arav! Your mom is busy at work. She asked me to pick you up. We\'ll grab ice cream on the way home!" Arav has never seen this person before. What should Arav do?',
+          hint: 'You don\'t know this person. Always verify with parents first.',
           options: [
             {
               order: 1,
-              text: 'Say NO and move to a safe place',
+              text: 'Say "NO, I don\'t know you. I\'ll wait for my parents."',
               imageSrc: '/yes.png',
               correct: true,
-              nextKey: 'abuse_tell_adult',
-              feedback: 'Correct. Saying NO and moving away is the safest first step.',
+              nextKey: 'a2_safe_choice_correct',
+              feedback: 'CORRECT! You recognized an unsafe situation. Saying NO clearly is powerful.',
             },
             {
               order: 2,
-              text: 'Go with the stranger quickly',
+              text: 'Get in the car - the man seems friendly',
               imageSrc: '/no.png',
               correct: false,
-              nextKey: 'abuse_wrong_consequence',
-              feedback: 'Unsafe choice. Never go with a stranger. Learn what can go wrong.',
+              nextKey: 'a2_unsafe_path_consequence',
+              feedback: 'RISKY! Friendly strangers can still be dangerous. See what happens next.',
+            },
+            {
+              order: 3,
+              text: 'Ask the man questions to verify he knows your parents',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a2_verify_attempt',
+              feedback: 'Partial credit. Asking is better than going silently, but it\'s not safe to engage with strangers alone.',
             },
           ],
         },
+
+        // Scene 2a: Safe Path - After Saying No
         {
-          key: 'abuse_wrong_consequence',
+          key: 'a2_safe_choice_correct',
           order: 2,
           imageSrc: '/a2.jpg',
-          question: 'Arav feels scared and alone. What should he do now?',
-          hint: 'Get help from safe adults.',
+          question: 'SCENE 2 - SAFE PATH: Arav said NO clearly!\n\nThe stranger leaves. Arav feels proud and safe. His friend Priya is still at school too. What is Arav\'s best next step?',
+          hint: 'Stay with authority figures until parents arrive.',
           options: [
             {
               order: 1,
-              text: 'Shout for help and run to a crowded place',
+              text: 'Go back inside and tell a teacher what happened',
               imageSrc: '/yes.png',
               correct: true,
-              nextKey: 'abuse_start',
-              feedback: 'Good recovery. Now go back and choose the safe action from the beginning.',
+              nextKey: 'a3_adult_support',
+              feedback: 'EXCELLENT! Telling trusted adults protects you and other children.',
             },
             {
               order: 2,
-              text: 'Stay silent and keep going',
+              text: 'Wait alone outside the gate for parents',
               imageSrc: '/no.png',
               correct: false,
-              nextKey: 'abuse_wrong_consequence',
-              feedback: 'Not safe. Staying silent gives control to the stranger. Try again.',
+              nextKey: 'a2_alone_outside',
+              feedback: 'Not ideal. School adults are there to help. Going inside is safer.',
+            },
+            {
+              order: 3,
+              text: 'Leave the school area and walk home alone',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a2_walk_alone_risk',
+              feedback: 'Risky! Walking alone makes you vulnerable. Stay at school.',
             },
           ],
         },
+
+        // Scene 2b: Consequence Path - After Getting in Car
         {
-          key: 'abuse_tell_adult',
+          key: 'a2_unsafe_path_consequence',
+          order: 2,
+          imageSrc: '/a2.jpg',
+          question: 'SCENE 2 - UNSAFE PATH: Arav got in the car.\n\nBut instead of ice cream, the man drives to an unfamiliar place. Arav realizes this is NOT his home. He feels scared and trapped. What should Arav do RIGHT NOW?',
+          hint: 'Trust your instincts. Get to safety and tell adults immediately.',
+          options: [
+            {
+              order: 1,
+              text: 'Open the door and run to a crowded place. Shout for help.',
+              imageSrc: '/yes.png',
+              correct: true,
+              nextKey: 'a3_escape_and_report',
+              feedback: 'BRAVE! This is the right action. Getting away and calling for help saves lives.',
+            },
+            {
+              order: 2,
+              text: 'Stay quiet and hope the man drives home eventually',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a2_danger_intensifies',
+              feedback: 'DANGER! Staying silent gives the person control. Never stay quiet when unsafe.',
+            },
+            {
+              order: 3,
+              text: 'Ask the man where you\'re going',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a2_danger_intensifies',
+              feedback: 'Not enough. When something feels wrong, ACT to get to safety, not talk.',
+            },
+          ],
+        },
+
+        // Scene 2c: Verification Attempt (Shows why it doesn't work)
+        {
+          key: 'a2_verify_attempt',
+          order: 2,
+          imageSrc: '/a2.jpg',
+          question: 'SCENE 2 - VERIFICATION ATTEMPT: Arav asked questions.\n\nThe man said, "I know your mom\'s name is Priya and you love chocolate ice cream!" (He got this from social media). Arav feels confused - is it safe? What should he do?',
+          hint: 'Strangers can find information online. Personal details don\'t mean safety.',
+          options: [
+            {
+              order: 1,
+              text: 'Still say NO. Go back inside the school to tell a teacher.',
+              imageSrc: '/yes.png',
+              correct: true,
+              nextKey: 'a3_adult_support',
+              feedback: 'PERFECT! You realized that having details doesn\'t mean someone is safe. Good instinct!',
+            },
+            {
+              order: 2,
+              text: 'Now trust him and get in the car',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a2_unsafe_path_consequence',
+              feedback: 'Risky! Information from social media doesn\'t prove someone is trustworthy.',
+            },
+          ],
+        },
+
+        // Scene 3: Adult Support & Reporting
+        {
+          key: 'a3_adult_support',
           order: 3,
           imageSrc: '/a3.jpg',
-          question: 'Arav is now safe. What is the next best step?',
-          hint: 'Trusted adults protect children.',
+          question: 'SCENE 3 - WITH TRUSTED ADULTS: Arav told his teacher about the stranger.\n\nThe teacher:\n• Called his parents immediately\n• Reported to school security\n• Made sure Arav felt safe\n\nWhat happens next?',
+          hint: 'Adults take over protecting you. Your job is to tell.',
           options: [
             {
               order: 1,
-              text: 'Tell a parent, teacher, or trusted adult immediately',
-              imageSrc: '/guardian.svg',
+              text: 'Parents pick up Arav. Police are contacted to protect other children.',
+              imageSrc: '/yes.png',
               correct: true,
-              nextKey: 'abuse_done',
-              feedback: 'Excellent. Sharing with trusted adults keeps children safer.',
+              nextKey: 'a4_learning_moment',
+              feedback: 'YES! Reporting protects everyone. Adults handle the situation now.',
             },
             {
               order: 2,
-              text: 'Keep it secret and say nothing',
+              text: 'The teacher tells Arav to forget about it',
               imageSrc: '/no.png',
               correct: false,
-              nextKey: 'abuse_tell_adult',
-              feedback: 'Unsafe. Secrets in safety situations should be shared with trusted adults.',
+              nextKey: 'a3_adult_support',
+              feedback: 'Real teachers never dismiss safety concerns. They take action.',
             },
           ],
         },
+
+        // Scene 3b: Escape & Report Path
         {
-          key: 'abuse_done',
-          order: 4,
-          imageSrc: '/learn.svg',
-          question: 'Safety complete: Who can children call in India for child help?',
-          hint: 'Remember this emergency number.',
+          key: 'a3_escape_and_report',
+          order: 3,
+          imageSrc: '/a3.jpg',
+          question: 'SCENE 3 - ESCAPE SUCCESSFUL: Arav ran away and found a shopkeeper!\n\nArav told him, "That man took me in his car to a strange place. I don\'t know him." The shopkeeper:\n• Called police\n• Called school to identify parents\n• Kept Arav safe\n\nWhat does Arav learn from this?',
+          hint: 'Not all adults are dangerous. You can trust shopkeepers, police, teachers, parents.',
           options: [
             {
               order: 1,
-              text: '1098 Child Helpline',
-              imageSrc: '/learn.svg',
+              text: 'Trust authority figures (police, shopkeepers, teachers) when in danger',
+              imageSrc: '/yes.png',
+              correct: true,
+              nextKey: 'a4_learning_moment',
+              feedback: 'CORRECT! Recognizing safe adults anywhere can save you.',
+            },
+          ],
+        },
+
+        // Scene 2d: Intensified Danger Path (Educational consequences)
+        {
+          key: 'a2_danger_intensifies',
+          order: 2,
+          imageSrc: '/a2.jpg',
+          question: 'SCENE 2 - DANGER ESCALATES: Arav stayed quiet. Now the situation is worse.\n\nThe man is driving Arav farther away. Arav realizes he should have acted earlier. What can he do NOW?',
+          hint: 'It\'s never too late to get help. Do something NOW.',
+          options: [
+            {
+              order: 1,
+              text: 'Unbuckle seatbelt, open door at traffic light, RUN to a police officer or crowd',
+              imageSrc: '/yes.png',
+              correct: true,
+              nextKey: 'a3_escape_and_report',
+              feedback: 'GOOD! Even in bad situations, you can escape. Act immediately. Every second counts.',
+            },
+          ],
+        },
+
+        // Scene 2e: Alone Outside (Less Safe)
+        {
+          key: 'a2_alone_outside',
+          order: 2,
+          imageSrc: '/a2.jpg',
+          question: 'SCENE 2 - ALONE OUTSIDE: Arav waited alone at the gate.\n\nAfter 10 minutes, another unfamiliar person approaches and offers a ride. Arav realizes being alone was risky. What should he do?',
+          hint: 'Return to the safe adult space immediately.',
+          options: [
+            {
+              order: 1,
+              text: 'Say NO and run back inside the school to tell a teacher',
+              imageSrc: '/yes.png',
+              correct: true,
+              nextKey: 'a3_adult_support',
+              feedback: 'CORRECT! This shows why staying with adults is safer than waiting alone.',
+            },
+          ],
+        },
+
+        // Scene 2f: Walk Alone Risk
+        {
+          key: 'a2_walk_alone_risk',
+          order: 2,
+          imageSrc: '/a2.jpg',
+          question: 'SCENE 2 - WALKING ALONE: Arav walked home alone.\n\nHalf-way home, someone calls to him from a car and offers a ride. Arav is already tired and alone. What should he do?',
+          hint: 'Repeat the safety rule: Say NO to strangers.',
+          options: [
+            {
+              order: 1,
+              text: 'Say NO firmly and keep walking to home or a nearby safe place',
+              imageSrc: '/yes.png',
+              correct: true,
+              nextKey: 'a4_learning_moment',
+              feedback: 'RIGHT! Even when tired, safety comes first. Keep walking.',
+            },
+            {
+              order: 2,
+              text: 'Get in the car to rest',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a2_unsafe_path_consequence',
+              feedback: 'Never trade comfort for safety. That\'s how dangers happen.',
+            },
+          ],
+        },
+
+        // Scene 4: Key Learning Moment
+        {
+          key: 'a4_learning_moment',
+          order: 4,
+          imageSrc: '/a4.jpg',
+          question: 'SCENE 4 - KEY LESSONS: Arav is safe now.\n\nHis parents and a counselor help him understand what happened. What are the THREE MOST IMPORTANT SAFETY RULES for children?',
+          hint: 'NO to strangers. YES to trusted adults. Tell immediately when unsafe.',
+          options: [
+            {
+              order: 1,
+              text: '"NO" to offers from people you don\'t know, even if friendly',
+              imageSrc: '/yes.png',
+              correct: true,
+              nextKey: 'a5_body_safety',
+              feedback: 'RULE 1: CORRECT! Strangers can seem nice but still be dangerous.',
+            },
+            {
+              order: 2,
+              text: 'Always trust "friendly strangers" because they seem nice',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a5_body_safety',
+              feedback: 'WRONG! Never use niceness as a safety measure.',
+            },
+          ],
+        },
+
+        // Scene 5: Body Safety & Boundaries
+        {
+          key: 'a5_body_safety',
+          order: 5,
+          imageSrc: '/a5.jpg',
+          question: 'SCENE 5 - BODY SAFETY: Arav learned about personal boundaries too.\n\nIf any adult tells Arav to keep secrets about touching, or makes him uncomfortable by touching private body parts, what should he do?',
+          hint: 'Your body belongs to you. Tell a safe adult immediately.',
+          options: [
+            {
+              order: 1,
+              text: 'Say NO firmly and tell a trusted adult (parent, teacher) immediately',
+              imageSrc: '/yes.png',
+              correct: true,
+              nextKey: 'a6_emergency_contacts',
+              feedback: 'PERFECT! Your body is YOUR CHOICE. Others cannot make you uncomfortable.',
+            },
+            {
+              order: 2,
+              text: 'Keep it secret because the adult said so',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a5_body_safety',
+              feedback: 'NEVER! Safe adults never ask children to keep secrets about body safety.',
+            },
+            {
+              order: 3,
+              text: 'Feel ashamed and stay silent',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a5_body_safety',
+              feedback: 'WRONG! This is never your fault. Tell immediately.',
+            },
+          ],
+        },
+
+        // Scene 6: Emergency Resources
+        {
+          key: 'a6_emergency_contacts',
+          order: 6,
+          imageSrc: '/a6.jpg',
+          question: 'SCENE 6 - EMERGENCY RESOURCES: Arav now knows who to call in emergencies!\n\nWhich number should children in India call if they are unsafe, hurt, or being abused?',
+          hint: 'This is India\'s official child helpline. Trained counselors answer 24/7.',
+          options: [
+            {
+              order: 1,
+              text: '1098 - Child Helpline (Free, Anonymous, 24/7)',
+              imageSrc: '/yes.png',
+              correct: true,
+              nextKey: 'a6_completion',
+              feedback: 'EXCELLENT! 1098 is always there. You can also call 100 (Police) or 108 (Ambulance).',
+            },
+            {
+              order: 2,
+              text: '1099 - Random number',
+              imageSrc: '/no.png',
+              correct: false,
+              nextKey: 'a6_emergency_contacts',
+              feedback: 'Not correct. Remember: 1098 is the helpline for children in India.',
+            },
+          ],
+        },
+
+        // Final Scene: Completion & Empowerment
+        {
+          key: 'a6_completion',
+          order: 7,
+          imageSrc: '/a6.jpg',
+          question: '"Story Complete - ARAV STAYED SAFE!"\n\nArav learned that being safe is about:\n✓ Trusting his instincts\n✓ Saying NO firmly\n✓ Telling trusted adults\n✓ Knowing his body belongs to him\n✓ Knowing emergency contacts\n\nCongratulations! You helped Arav make safe choices. Now YOU know how to stay safe too!',
+          hint: 'You are safe. Your choices matter. Tell trusted adults.',
+          options: [
+            {
+              order: 1,
+              text: 'I understand these safety rules and will tell trusted adults if unsafe',
+              imageSrc: '/yes.png',
               correct: true,
               nextKey: null,
-              feedback: 'Great. 1098 is the Child Helpline. You completed this story.',
+              feedback: 'BRAVE! You just completed the full safety training. Remember: You deserve to be safe. Always trust your instincts. Always tell trusted adults. You are not alone.',
             },
           ],
         },

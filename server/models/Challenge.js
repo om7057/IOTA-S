@@ -1,10 +1,12 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/sequelize.js';
+import { sanitizeChallengeOptions } from '../utils/sanitization.js';
 
 /**
  * Challenge Model
  * Represents a challenge/activity/exercise within a lesson
  * Used for interactive learning and assessment
+ * Automatically sanitizes options to remove emoji/special characters
  */
 export const Challenge = sequelize.define(
   'Challenge',
@@ -117,6 +119,20 @@ export const Challenge = sequelize.define(
       { fields: ['lessonId', 'sequence'] },
       { fields: ['type'] },
     ],
+    hooks: {
+      beforeCreate: (challenge) => {
+        // Sanitize options before saving
+        if (challenge.options && Array.isArray(challenge.options)) {
+          challenge.options = sanitizeChallengeOptions(challenge.options);
+        }
+      },
+      beforeUpdate: (challenge) => {
+        // Sanitize options on update
+        if (challenge.changed('options') && challenge.options && Array.isArray(challenge.options)) {
+          challenge.options = sanitizeChallengeOptions(challenge.options);
+        }
+      },
+    },
   }
 );
 

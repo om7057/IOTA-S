@@ -57,7 +57,7 @@
   gap: 14px;
 }
 
-.close-btn {
+.children-quiz .close-btn {
   width: 36px;
   height: 36px;
   border: none;
@@ -89,7 +89,7 @@
   width: 100%;
 }
 
-.progress-bar {
+.children-quiz .progress-bar {
   width: 100%;
   height: 6px;
   background: rgba(255, 255, 255, 0.3);
@@ -98,13 +98,13 @@
   margin-bottom: 10px;
 }
 
-.progress-fill {
+.children-quiz .progress-fill {
   height: 100%;
   background: white;
   transition: width 0.3s ease;
 }
 
-.progress-text {
+.children-quiz .progress-text {
   color: white;
   text-align: center;
   font-size: 0.9rem;
@@ -125,6 +125,8 @@
   max-width: 900px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
+  padding: 0 20px;
 }
 
 .story-progress {
@@ -136,6 +138,9 @@
   border-radius: 20px;
   padding: 30px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .story-header-row {
@@ -157,6 +162,7 @@
   object-fit: cover;
   border-radius: 12px;
   margin-bottom: 20px;
+  display: block;
 }
 
 .story-question {
@@ -182,6 +188,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
+  overflow: hidden;
 }
 
 .story-option-btn:hover {
@@ -436,6 +443,7 @@
   color: #1f2937;
   cursor: pointer;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
 }
 
 .story-option-btn:hover:not(:disabled) {
@@ -902,12 +910,12 @@
   transform: scale(0.98);
 }
 
-.loading {
+.children-quiz .loading {
   text-align: center;
   padding: 60px 20px;
 }
 
-.spinner {
+.children-quiz .spinner {
   width: 50px;
   height: 50px;
   border: 4px solid #f3f3f3;
@@ -922,7 +930,7 @@
   100% { transform: rotate(360deg); }
 }
 
-.loading p {
+.children-quiz .loading p {
   color: #666;
   font-size: 1rem;
   margin: 0;
@@ -1256,7 +1264,7 @@
   margin-bottom: 8px;
 }
 
-.progress-bar {
+.children-quiz .progress-bar {
   width: 100%;
   height: 6px;
   background: #e5e7eb;
@@ -1264,7 +1272,7 @@
   overflow: hidden;
 }
 
-.progress-fill {
+.children-quiz .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #667eea, #764ba2);
   transition: width 0.3s ease;
@@ -1421,5 +1429,123 @@
     width: 28px;
     height: 28px;
     font-size: 12px;
+  }
+}
+
+/* Modern minimal refresh */
+.children-quiz {
+  min-height: calc(100vh - 5.5rem);
+  background: transparent;
+  padding: 0;
+}
+
+.quiz-content,
+.story-card,
+.quiz-footer,
+.overlay-card,
+.news-story-player .story-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 32, 0.06);
+}
+
+.children-quiz .close-btn,
+.story-secondary-btn,
+.news-story-player .back-btn {
+  border: 1px solid var(--line);
+  background: #f5f8fa;
+  color: #43525c;
+  border-radius: 12px;
+}
+
+.story-primary-btn,
+.next-btn,
+.check-answer-btn,
+.continue-btn,
+.finish-btn,
+.retry-btn,
+.generate-btn,
+.story-complete .back-btn {
+  background: var(--brand);
+  color: #fff;
+  border-radius: 12px;
+}
+
+.children-quiz .progress-bar {
+  background: #dfebee;
+}
+
+.children-quiz .progress-fill {
+  background: linear-gradient(90deg, #0f8d8f, #0d7a7b);
+}
+
+.question-text,
+.story-question,
+.story-header-row h2,
+.story-complete h3,
+.news-story-player .story-header h1 {
+  color: var(--text-main);
+}
+
+.progress-text,
+.footer-status-text,
+.question-bubble,
+.hint-box,
+.story-feedback-box p,
+.feedback p,
+.story-complete p,
+.scene-description {
+  color: #43525c;
+}
+
+.option-btn,
+.story-option-btn,
+.question-bubble,
+.hint-box,
+.story-feedback-box,
+.feedback,
+.quiz-summary,
+.result-summary,
+.story-summary {
+  border-color: var(--line);
+}
+
+.option-btn:hover:not(.disabled),
+.story-option-btn:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: #f4f9f9;
+  transform: translateY(-1px);
+}
+
+.option-letter {
+  background: var(--brand);
+}
+
+.hearts-pill {
+  background: #fff;
+  border: 1px solid var(--line);
+  color: #a52552;
+}
+
+.children-quiz .spinner {
+  border-color: #dbe4e8;
+  border-top-color: var(--brand);
+}
+
+@media (max-width: 900px) {
+  .quiz-content,
+  .story-card,
+  .news-story-player .story-card {
+    padding: 1rem;
+  }
+
+  .question-text,
+  .story-question {
+    font-size: 1.15rem;
+  }
+
+  .option-btn {
+    padding: 12px 14px;
   }
 }

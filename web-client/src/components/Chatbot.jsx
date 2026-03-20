@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import './Chatbot.css';
 
 const Chatbot = () => {
+  const { user, token } = useAuth();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -10,8 +12,9 @@ const Chatbot = () => {
   const [stats, setStats] = useState(null);
   const messagesEndRef = useRef(null);
 
-  const userId = localStorage.getItem('userId') || 'demo-user';
-  const token = localStorage.getItem('token');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const userId = user?.id || localStorage.getItem('userId');
+  const authToken = token || localStorage.getItem('token');
 
   // Scroll to bottom when new message appears
   useEffect(() => {
@@ -20,13 +23,15 @@ const Chatbot = () => {
 
   // Load chat history on mount
   useEffect(() => {
-    loadChatHistory();
-  }, []);
+    if (userId && authToken) {
+      loadChatHistory();
+    }
+  }, [userId, authToken]);
 
   const loadChatHistory = async () => {
     try {
-      const response = await axios.get(`/api/chatbot/${userId}/history`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await axios.get(`${API_URL}/chatbot/${userId}/history`, {
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       setMessages(response.data.data);
     } catch (error) {
@@ -36,8 +41,8 @@ const Chatbot = () => {
 
   const loadStats = async () => {
     try {
-      const response = await axios.get(`/api/chatbot/${userId}/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await axios.get(`${API_URL}/chatbot/${userId}/stats`, {
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       setStats(response.data.data);
     } catch (error) {
@@ -49,6 +54,7 @@ const Chatbot = () => {
     e.preventDefault();
 
     if (!inputValue.trim()) return;
+    if (!userId || !authToken) return;
 
     // Add user message to UI immediately
     const userMsg = {
@@ -63,9 +69,9 @@ const Chatbot = () => {
 
     try {
       const response = await axios.post(
-        '/api/chatbot/send',
+        `${API_URL}/chatbot/send`,
         { userId, message: inputValue },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
 
       const { userMessage, botMessage } = response.data.data;
@@ -87,8 +93,8 @@ const Chatbot = () => {
   const handleClearHistory = async () => {
     if (window.confirm('Are you sure? This will delete all chat history.')) {
       try {
-        await axios.delete(`/api/chatbot/${userId}/history`, {
-          headers: { Authorization: `Bearer ${token}` },
+        await axios.delete(`${API_URL}/chatbot/${userId}/history`, {
+          headers: { Authorization: `Bearer ${authToken}` },
         });
         setMessages([]);
       } catch (error) {

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+
 const TeenForum = () => {
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
@@ -10,9 +12,13 @@ const TeenForum = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newComment, setNewComment] = useState('');
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const authHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   useEffect(() => {
     fetchTopics();
@@ -21,22 +27,24 @@ const TeenForum = () => {
   const fetchTopics = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/teen/discussions/topics');
-      setTopics(response.data);
+      const response = await axios.get(`${API_URL}/groups`);
+      setTopics(response.data?.data || []);
     } catch (error) {
-      console.error('Error fetching topics:', error);
+      console.error('Error fetching groups/topics:', error);
+      setTopics([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchDiscussions = async (topicId) => {
+  const fetchDiscussions = async (groupId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/teen/discussions/topics/${topicId}/discussions`);
-      setDiscussions(response.data.discussions);
+      const response = await axios.get(`${API_URL}/discussions/group/${groupId}`);
+      setDiscussions(response.data?.data || []);
     } catch (error) {
       console.error('Error fetching discussions:', error);
+      setDiscussions([]);
     } finally {
       setLoading(false);
     }
@@ -45,9 +53,10 @@ const TeenForum = () => {
   const fetchDiscussionDetails = async (discussionId) => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/teen/discussions/discussions/${discussionId}`);
-      setSelectedDiscussion(response.data);
-      setComments(response.data.TeenComments || []);
+      const response = await axios.get(`${API_URL}/discussions/${discussionId}`);
+      const discussion = response.data?.data;
+      setSelectedDiscussion(discussion || null);
+      setComments(discussion?.replies || []);
     } catch (error) {
       console.error('Error fetching discussion details:', error);
     } finally {
@@ -58,33 +67,35 @@ const TeenForum = () => {
   const handleTopicSelect = (topicId) => {
     setSelectedTopic(topicId);
     setSelectedDiscussion(null);
+    setComments([]);
     fetchDiscussions(topicId);
   };
 
   const handleCreateDiscussion = async (e) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newContent.trim()) return;
+    if (!newTitle.trim() || !newContent.trim() || !selectedTopic) return;
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       await axios.post(
-        '/api/teen/discussions/discussions',
+        `${API_URL}/discussions`,
         {
-          topicId: selectedTopic,
+          groupId: selectedTopic,
           title: newTitle,
           content: newContent,
-          isAnonymous
+          tags: [],
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: authHeaders() }
       );
+
       setNewTitle('');
       setNewContent('');
-      setIsAnonymous(false);
       setShowCreateForm(false);
       fetchDiscussions(selectedTopic);
     } catch (error) {
       console.error('Error creating discussion:', error);
+      const message = error.response?.data?.error || 'Failed to create discussion. Join the group first.';
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -92,18 +103,14 @@ const TeenForum = () => {
 
   const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !selectedDiscussion) return;
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
       await axios.post(
-        `/api/teen/discussions/discussions/${selectedDiscussion.id}/comments`,
-        {
-          content: newComment,
-          isAnonymous
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${API_URL}/discussions/${selectedDiscussion.id}/replies`,
+        { content: newComment },
+        { headers: authHeaders() }
       );
       setNewComment('');
       fetchDiscussionDetails(selectedDiscussion.id);
@@ -116,14 +123,16 @@ const TeenForum = () => {
 
   const handleLikeDiscussion = async (discussionId) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.post(
-        `/api/teen/discussions/discussions/${discussionId}/like`,
+        `${API_URL}/discussions/${discussionId}/like`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: authHeaders() }
       );
       if (selectedDiscussion?.id === discussionId) {
         fetchDiscussionDetails(discussionId);
+      }
+      if (selectedTopic) {
+        fetchDiscussions(selectedTopic);
       }
     } catch (error) {
       console.error('Error liking discussion:', error);
@@ -132,11 +141,10 @@ const TeenForum = () => {
 
   const handleLikeComment = async (commentId) => {
     try {
-      const token = localStorage.getItem('token');
       await axios.post(
-        `/api/teen/discussions/comments/${commentId}/like`,
+        `${API_URL}/discussions/replies/${commentId}/like`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: authHeaders() }
       );
       if (selectedDiscussion) {
         fetchDiscussionDetails(selectedDiscussion.id);
@@ -152,10 +160,9 @@ const TeenForum = () => {
         <h1 className="text-4xl font-bold text-gray-800 mb-8">Teen Forum</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Topics Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Topics</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Groups</h2>
               <div className="space-y-2">
                 {topics.map((topic) => (
                   <button
@@ -168,20 +175,17 @@ const TeenForum = () => {
                     }`}
                   >
                     <div className="font-semibold">{topic.name}</div>
-                    <div className="text-sm opacity-75">
-                      {topic.TeenDiscussions?.length || 0} discussions
-                    </div>
+                    <div className="text-sm opacity-75">{topic.memberCount || 0} members</div>
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="lg:col-span-3">
             {!selectedTopic ? (
               <div className="bg-white rounded-lg shadow-md p-12 text-center">
-                <p className="text-gray-600 text-lg">Select a topic to view discussions</p>
+                <p className="text-gray-600 text-lg">Select a group to view discussions</p>
               </div>
             ) : !selectedDiscussion ? (
               <>
@@ -210,15 +214,6 @@ const TeenForum = () => {
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 h-32"
                         required
                       />
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={isAnonymous}
-                          onChange={(e) => setIsAnonymous(e.target.checked)}
-                          className="w-4 h-4 text-indigo-500"
-                        />
-                        <span className="text-gray-700">Post anonymously</span>
-                      </label>
                       <button
                         type="submit"
                         disabled={loading}
@@ -239,14 +234,12 @@ const TeenForum = () => {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-lg font-semibold text-gray-800">{discussion.title}</h3>
-                        <span className="text-sm text-gray-500">
-                          {discussion.isAnonymous ? 'Anonymous' : discussion.User?.name || 'Unknown'}
-                        </span>
+                        <span className="text-sm text-gray-500">{discussion.creator?.username || 'Unknown'}</span>
                       </div>
                       <p className="text-gray-600 line-clamp-2 mb-3">{discussion.content}</p>
                       <div className="flex justify-between items-center text-sm text-gray-500">
-                        <span>{discussion.commentCount || 0} replies</span>
-                        <span>👍 {discussion.likes || 0}</span>
+                        <span>{discussion.replyCount || 0} replies</span>
+                        <span>👍 {discussion.likeCount || 0}</span>
                       </div>
                     </div>
                   ))}
@@ -268,14 +261,10 @@ const TeenForum = () => {
                       onClick={() => handleLikeDiscussion(selectedDiscussion.id)}
                       className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
                     >
-                      👍 {selectedDiscussion.likes || 0}
+                      👍 {selectedDiscussion.likeCount || 0}
                     </button>
                   </div>
-                  <p className="text-gray-600 text-sm mb-4">
-                    {selectedDiscussion.isAnonymous
-                      ? 'Anonymous'
-                      : selectedDiscussion.User?.name || 'Unknown'}
-                  </p>
+                  <p className="text-gray-600 text-sm mb-4">{selectedDiscussion.creator?.username || 'Unknown'}</p>
                   <p className="text-gray-700 whitespace-pre-wrap">{selectedDiscussion.content}</p>
                 </div>
 
@@ -289,15 +278,6 @@ const TeenForum = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 h-24"
                       required
                     />
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={isAnonymous}
-                        onChange={(e) => setIsAnonymous(e.target.checked)}
-                        className="w-4 h-4 text-indigo-500"
-                      />
-                      <span className="text-gray-700">Reply anonymously</span>
-                    </label>
                     <button
                       type="submit"
                       disabled={loading}
@@ -314,13 +294,13 @@ const TeenForum = () => {
                     <div key={comment.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm text-gray-600 font-semibold">
-                          {comment.isAnonymous ? 'Anonymous' : comment.User?.name || 'Unknown'}
+                          {comment.creator?.username || 'Unknown'}
                         </span>
                         <button
                           onClick={() => handleLikeComment(comment.id)}
                           className="text-red-500 hover:text-red-700 text-sm"
                         >
-                          👍 {comment.likes || 0}
+                          👍 {comment.likeCount || 0}
                         </button>
                       </div>
                       <p className="text-gray-700">{comment.content}</p>

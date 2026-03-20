@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 const JournalPage = () => {
   const { user, token } = useAuth();
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
   const [journals, setJournals] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedJournal, setSelectedJournal] = useState(null);
@@ -15,33 +16,35 @@ const JournalPage = () => {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    mood: '',
+    emotion: '',
     tags: [],
     isAnonymous: false
   });
 
-  const moodOptions = ['happy', 'sad', 'angry', 'scared', 'confused', 'excited', 'calm', 'tired'];
+  const moodOptions = ['happy', 'sad', 'angry', 'anxious', 'confused', 'excited', 'calm', 'neutral', 'motivated', 'stressed'];
   const journalTags = ['school', 'friends', 'family', 'homework', 'fun', 'worried', 'excited', 'learning'];
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && token) {
       fetchJournals();
     }
-  }, [user]);
+  }, [user?.id, token]);
 
   const fetchJournals = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-      const response = await fetch(`${apiUrl}/journals/user/${user.id}`, {
+      const response = await fetch(`${apiUrl}/journals?limit=100`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
-        setJournals(data);
+        setJournals(Array.isArray(data?.journals) ? data.journals : []);
+      } else {
+        setJournals([]);
       }
     } catch (error) {
       console.error('Error fetching journals:', error);
       toast.error('Failed to load journals');
+      setJournals([]);
     }
   };
 
@@ -73,7 +76,7 @@ const JournalPage = () => {
         ? `${apiUrl}/journals/${editingId}`
         : `${apiUrl}/journals`;
       
-      const method = editingId ? 'PUT' : 'POST';
+      const method = editingId ? 'PATCH' : 'POST';
       
       const response = await fetch(url, {
         method,
@@ -82,12 +85,11 @@ const JournalPage = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          userId: user.id,
-          title: formData.title || 'Untitled',
+          title: formData.title || null,
           content: formData.content,
-          mood: formData.mood || null,
+          emotion: formData.emotion || null,
           tags: formData.tags,
-          isAnonymous: formData.isAnonymous
+          isPrivate: formData.isAnonymous
         })
       });
 
@@ -129,7 +131,7 @@ const JournalPage = () => {
     setFormData({
       title: '',
       content: '',
-      mood: '',
+      emotion: '',
       tags: [],
       isAnonymous: false
     });
@@ -140,11 +142,11 @@ const JournalPage = () => {
     setFormData({
       title: journal.title,
       content: journal.content,
-      mood: journal.mood || '',
+      emotion: journal.emotion || '',
       tags: journal.tags || [],
-      isAnonymous: journal.isAnonymous || false
+      isAnonymous: journal.isPrivate !== undefined ? journal.isPrivate : true
     });
-    setEditingId(journal._id);
+    setEditingId(journal.id);
     setShowForm(true);
     setSelectedJournal(null);
   };
@@ -182,10 +184,10 @@ const JournalPage = () => {
             </button>
           </div>
 
-          {selectedJournal.mood && (
+          {selectedJournal.emotion && (
             <div className="mb-4">
               <span className="inline-block bg-sky-100 text-sky-800 px-3 py-1 rounded-full text-sm font-semibold">
-                Mood: {selectedJournal.mood}
+                Mood: {selectedJournal.emotion}
               </span>
             </div>
           )}
@@ -207,7 +209,7 @@ const JournalPage = () => {
           </div>
 
           <button
-            onClick={() => handleDelete(selectedJournal._id)}
+            onClick={() => handleDelete(selectedJournal.id)}
             className="flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold"
           >
             <Trash2 className="w-4 h-4" /> Delete Entry
@@ -274,8 +276,8 @@ const JournalPage = () => {
                 How are you feeling? (optional)
               </label>
               <select
-                name="mood"
-                value={formData.mood}
+                name="emotion"
+                value={formData.emotion}
                 onChange={handleInputChange}
                 className="w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-sky-600"
               >
@@ -390,7 +392,7 @@ const JournalPage = () => {
         <div className="grid gap-4">
           {journals.map(journal => (
             <div
-              key={journal._id}
+              key={journal.id}
               className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-sky-400 hover:shadow-lg transition-all cursor-pointer"
               onClick={() => setSelectedJournal(journal)}
             >
@@ -405,9 +407,9 @@ const JournalPage = () => {
                     })}
                   </p>
                 </div>
-                {journal.mood && (
+                {journal.emotion && (
                   <span className="bg-sky-100 text-sky-800 px-3 py-1 rounded-full text-xs font-semibold">
-                    {journal.mood}
+                    {journal.emotion}
                   </span>
                 )}
               </div>

@@ -8,6 +8,7 @@ const ProfilePage = () => {
   const navigate = useNavigate();
 
   const [userData, setUserData] = useState(null);
+  const [statsData, setStatsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -17,7 +18,7 @@ const ProfilePage = () => {
   };
 
   useEffect(() => {
-    const fetchUserProgress = async () => {
+    const fetchUserStats = async () => {
       if (!user?.id || !token) {
         console.log("Missing user ID or token, skipping fetch");
         setLoading(false);
@@ -25,39 +26,75 @@ const ProfilePage = () => {
       }
 
       try {
-        console.log("Fetching progress for user:", user.id);
+        console.log("Fetching stats for user:", user.id);
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-        const response = await fetch(`${apiUrl}/quiz-progress/user/${user.id}`, {
+        
+        // Fetch quiz progress data (for backward compatibility and detailed attempts)
+        const quizProgressResponse = await fetch(`${apiUrl}/quiz-progress/user/${user.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-        
-        console.log("Progress fetch response status:", response.status);
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            console.log("No progress data found (404) - setting empty state");
-            setUserData(null);
-          } else {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to fetch user progress");
+
+        // Fetch comprehensive progress stats
+        const progressStatsResponse = await fetch(`${apiUrl}/progress/stats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
+        });
+
+        // Fetch quiz stats
+        const quizStatsResponse = await fetch(`${apiUrl}/quizzes/stats/all`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (quizProgressResponse.ok && progressStatsResponse.ok && quizStatsResponse.ok) {
+          const quizProgressData = await quizProgressResponse.json();
+          const progressStats = await progressStatsResponse.json();
+          const quizStats = await quizStatsResponse.json();
+
+          console.log("All data fetched successfully");
+          setUserData(Array.isArray(quizProgressData) ? quizProgressData : quizProgressData.data || []);
+          setStatsData({
+            storiesCompleted: progressStats.data?.storiesCompleted || 0,
+            unitsCompleted: progressStats.data?.unitsCompleted || 0,
+            lessonsCompleted: progressStats.data?.lessonsCompleted || 0,
+            totalPointsEarned: progressStats.data?.totalPointsEarned || 0,
+            quizzesCompleted: quizStats.data?.quizzesCompleted || 0,
+            quizPointsEarned: quizStats.data?.totalPoints || 0,
+            avgScore: quizStats.data?.avgScore || 0,
+            totalAttempts: (progressStats.data?.totalAttempts || 0) + (quizStats.data?.totalAttempts || 0),
+          });
         } else {
-          const data = await response.json();
-          console.log("Progress data received:", data);
-          setUserData(data);
+          if (!quizProgressResponse.ok && quizProgressResponse.status !== 404) {
+            const errorData = await quizProgressResponse.json();
+            throw new Error(errorData.message || "Failed to fetch quiz progress");
+          }
+          // Set partial data if available
+          if (progressStatsResponse.ok) {
+            const progressStats = await progressStatsResponse.json();
+            setStatsData({
+              storiesCompleted: progressStats.data?.storiesCompleted || 0,
+              unitsCompleted: progressStats.data?.unitsCompleted || 0,
+              lessonsCompleted: progressStats.data?.lessonsCompleted || 0,
+              totalPointsEarned: progressStats.data?.totalPointsEarned || 0,
+            });
+          }
         }
       } catch (error) {
-        console.error("Error fetching user progress:", error);
+        console.error("Error fetching user stats:", error);
         setError(error.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserProgress();
+    fetchUserStats();
   }, [user, token]);
 
   return (
@@ -102,28 +139,30 @@ const ProfilePage = () => {
             </>
           ) : error ? (
             <div className="col-span-3 text-center py-4">
-              <p className="text-red-500 text-sm">Error loading progress: {error}</p>
+              <p className="text-red-500 text-sm">Error loading stats: {error}</p>
             </div>
-          ) : Array.isArray(userData) && userData.length > 0 ? (
+          ) : (
             <>
-              {/* Calculate stats from quiz progress data */}
+              {/* Total Points */}
               <div className="bg-amber-50 rounded-xl p-4 text-center border border-amber-100">
-                <p className="text-2xl font-bold text-amber-600 mb-1">{userData.reduce((sum, p) => sum + (p.points || 0), 0)}</p>
-                <p className="text-xs text-gray-600 font-medium">Points Earned</p>
+                <p className="text-2xl font-bold text-amber-600 mb-1">
+                  {(statsData?.totalPointsEarned || 0) + (statsData?.quizPointsEarned || 0)}
+                </p>
+                <p className="text-xs text-gray-600 font-medium">Total Points</p>
               </div>
+              {/* Quizzes Completed */}
               <div className="bg-sky-50 rounded-xl p-4 text-center border border-sky-100">
-                <p className="text-2xl font-bold text-sky-600 mb-1">{userData.filter(p => p.isCorrect).length}</p>
-                <p className="text-xs text-gray-600 font-medium">Correct Answers</p>
+                <p className="text-2xl font-bold text-sky-600 mb-1">{statsData?.quizzesCompleted || 0}</p>
+                <p className="text-xs text-gray-600 font-medium">Quizzes Completed</p>
               </div>
+              {/* Content Completed */}
               <div className="bg-emerald-50 rounded-xl p-4 text-center border border-emerald-100">
-                <p className="text-2xl font-bold text-emerald-600 mb-1">{userData.length}</p>
-                <p className="text-xs text-gray-600 font-medium">Total Attempts</p>
+                <p className="text-2xl font-bold text-emerald-600 mb-1">
+                  {(statsData?.storiesCompleted || 0) + (statsData?.unitsCompleted || 0) + (statsData?.lessonsCompleted || 0)}
+                </p>
+                <p className="text-xs text-gray-600 font-medium">Content Items</p>
               </div>
             </>
-          ) : (
-            <div className="col-span-3 text-center py-4">
-              <p className="text-gray-500 text-sm">No progress data found. Start taking quizzes!</p>
-            </div>
           )}
         </div>
 

@@ -9,7 +9,6 @@ export { sequelize };
 // This ensures sequelize is already defined when models load
 import User from './User.js';
 import RefreshToken from './RefreshToken.js';
-import Mood from './Mood.js';
 import Journal from './Journal.js';
 import Topic from './Topic.js';
 import Story from './Story.js';
@@ -21,6 +20,7 @@ import Quiz from './Quiz.js';
 import QuizQuestion from './QuizQuestion.js';
 import QuizProgress from './QuizProgress.js';
 import UserStoryProgress from './UserStoryProgress.js';
+import StoryAttempt from './StoryAttempt.js';
 import Leaderboard from './Leaderboard.js';
 import Group from './Group.js';
 import GroupMember from './GroupMember.js';
@@ -49,7 +49,6 @@ import ChildrenChallengeProgress from './ChildrenChallengeProgress.js';
 // Export all models AFTER they're imported
 export { User };
 export { RefreshToken };
-export { Mood };
 export { Journal };
 export { Topic };
 export { Story };
@@ -61,6 +60,7 @@ export { Quiz };
 export { QuizQuestion };
 export { QuizProgress };
 export { UserStoryProgress };
+export { StoryAttempt };
 export { Leaderboard };
 export { Group };
 export { GroupMember };
@@ -91,9 +91,6 @@ export { ChildrenChallengeProgress };
 User.hasMany(RefreshToken, { as: 'refreshTokens', foreignKey: 'userId' });
 RefreshToken.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 
-User.hasMany(Mood, { as: 'moods', foreignKey: 'userId' });
-Mood.belongsTo(User, { as: 'user', foreignKey: 'userId' });
-
 User.hasMany(Journal, { as: 'journals', foreignKey: 'userId' });
 Journal.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 
@@ -122,6 +119,16 @@ UserStoryProgress.belongsTo(Lesson, { as: 'lesson', foreignKey: 'lessonId' });
 
 Challenge.hasMany(UserStoryProgress, { as: 'userProgress', foreignKey: 'challengeId' });
 UserStoryProgress.belongsTo(Challenge, { as: 'challenge', foreignKey: 'challengeId' });
+
+// Story attempt relationships (child quiz/story answer tracking)
+User.hasMany(StoryAttempt, { as: 'storyAttempts', foreignKey: 'userId' });
+StoryAttempt.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+Story.hasMany(StoryAttempt, { as: 'attempts', foreignKey: 'storyId' });
+StoryAttempt.belongsTo(Story, { as: 'story', foreignKey: 'storyId' });
+
+Topic.hasMany(StoryAttempt, { as: 'attempts', foreignKey: 'topicId' });
+StoryAttempt.belongsTo(Topic, { as: 'topic', foreignKey: 'topicId' });
 
 // Leaderboard relationships
 User.hasMany(Leaderboard, { as: 'leaderboardEntries', foreignKey: 'userId' });
@@ -271,7 +278,6 @@ ChildrenChallengeProgress.belongsTo(ChildrenChallenge, { as: 'challenge', foreig
 const db = {
   User,
   RefreshToken,
-  Mood,
   Journal,
   Topic,
   Story,

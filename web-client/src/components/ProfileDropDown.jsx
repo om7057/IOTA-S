@@ -29,9 +29,9 @@ const ProfileDropdown = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
       >
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white font-bold text-xs">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-700 to-teal-600 flex items-center justify-center text-white font-bold text-xs">
           {user?.email?.charAt(0).toUpperCase() || "U"}
         </div>
         <ChevronDown 
@@ -40,9 +40,9 @@ const ProfileDropdown = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-elevated border border-gray-100 py-2 z-50 animate-fade-in">
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-fade-in">
           {/* User Info */}
-          <div className="px-4 py-3 border-b border-gray-100">
+          <div className="px-4 py-3 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <img
                 src={user?.imageUrl}
@@ -50,8 +50,8 @@ const ProfileDropdown = () => {
                 className="w-12 h-12 rounded-xl object-cover"
               />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 truncate">{user?.fullName}</p>
-                <p className="text-sm text-gray-500 truncate">{user?.primaryEmailAddress?.emailAddress}</p>
+                <p className="font-semibold text-slate-900 truncate">{user?.fullName}</p>
+                <p className="text-sm text-slate-500 truncate">{user?.primaryEmailAddress?.emailAddress || user?.email}</p>
               </div>
             </div>
           </div>
@@ -60,28 +60,28 @@ const ProfileDropdown = () => {
           <div className="py-2">
             <button
               onClick={() => { navigate("/profile"); setIsOpen(false); }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              <User className="w-5 h-5 text-gray-400" />
+              <User className="w-5 h-5 text-slate-400" />
               <span>My Profile</span>
             </button>
             <button
               onClick={() => { navigate("/my-progress"); setIsOpen(false); }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              <BarChart3 className="w-5 h-5 text-gray-400" />
+              <BarChart3 className="w-5 h-5 text-slate-400" />
               <span>My Progress</span>
             </button>
             <button
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              <Settings className="w-5 h-5 text-gray-400" />
+              <Settings className="w-5 h-5 text-slate-400" />
               <span>Settings</span>
             </button>
           </div>
 
           {/* Logout */}
-          <div className="pt-2 border-t border-gray-100">
+          <div className="pt-2 border-t border-slate-100">
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 transition-colors"

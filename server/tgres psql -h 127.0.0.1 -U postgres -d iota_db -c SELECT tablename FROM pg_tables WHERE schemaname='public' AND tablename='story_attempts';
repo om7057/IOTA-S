@@ -1,0 +1,24 @@
+    column_name    |        data_type         
+-------------------+--------------------------
+ id                | uuid
+ userId            | uuid
+ storyId           | uuid
+ topicId           | uuid
+ questionIndex     | integer
+ userAnswer        | text
+ correctAnswer     | text
+ isCorrect         | boolean
+ scenarioContext   | jsonb
+ emotionDetected   | USER-DEFINED
+ emotionConfidence | double precision
+ emotionIntensity  | integer
+ aiRecommendation  | jsonb
+ weaknessTopics    | ARRAY
+ timeSpent         | integer
+ attemptsCount     | integer
+ notes             | text
+ createdAt         | timestamp with time zone
+ updatedAt         | timestamp with time zone
+ deletedAt         | timestamp with time zone
+(20 rows)
+

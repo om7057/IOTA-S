@@ -5,6 +5,7 @@ import { sequelize } from '../config/sequelize.js';
  * Story Model
  * Represents educational/therapeutic stories with hierarchical structure
  * Stories contain Units, which contain Lessons, which contain Challenges
+ * Automatically sanitizes content to remove emoji/special characters
  */
 export const Story = sequelize.define(
   'Story',

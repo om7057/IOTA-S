@@ -16,7 +16,7 @@ export const getGroupThreads = async (req, res) => {
     const threads = await Thread.findAndCountAll({
       where,
       include: [
-        { model: User, as: 'creator', attributes: ['id', 'name', 'avatar'] },
+        { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'] },
         { model: Group, as: 'group', attributes: ['id', 'name'] },
       ],
       limit,
@@ -59,7 +59,7 @@ export const createThread = async (req, res) => {
 
     const populated = await Thread.findByPk(thread.id, {
       include: [
-        { model: User, as: 'creator', attributes: ['id', 'name', 'avatar'] },
+        { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'] },
         { model: Group, as: 'group', attributes: ['id', 'name'] },
       ],
     });
@@ -86,17 +86,17 @@ export const getThread = async (req, res) => {
 
     const thread = await Thread.findByPk(threadId, {
       include: [
-        { model: User, as: 'creator', attributes: ['id', 'name', 'avatar'] },
+        { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'] },
         { model: Group, as: 'group', attributes: ['id', 'name'] },
         {
           model: ThreadReply,
           as: 'replies',
           include: [
-            { model: User, as: 'creator', attributes: ['id', 'name', 'avatar'] },
+            { model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'] },
             {
               model: ThreadReply,
               as: 'nestedReplies',
-              include: [{ model: User, as: 'creator', attributes: ['id', 'name', 'avatar'] }],
+              include: [{ model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'] }],
             },
           ],
           separate: true,
@@ -149,7 +149,7 @@ export const replyToThread = async (req, res) => {
     await thread.update({ lastActivityAt: new Date() });
 
     const populated = await ThreadReply.findByPk(reply.id, {
-      include: [{ model: User, as: 'creator', attributes: ['id', 'name', 'avatar'] }],
+      include: [{ model: User, as: 'creator', attributes: ['id', 'firstName', 'lastName', 'avatarUrl', 'email'] }],
     });
 
     // Emit Socket.io event

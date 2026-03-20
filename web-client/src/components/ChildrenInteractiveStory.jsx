@@ -3,6 +3,12 @@ import useEmotionDetection from './useEmotionDetection';
 import EmotionSummary from './EmotionSummary';
 import './ChildrenQuiz.css';
 
+const normalizeOptionText = (text = '') =>
+  String(text)
+    .replace(/^[\s\uFE0F\u200D\p{Extended_Pictographic}✓✔✗✕☑☒]+/gu, '')
+    .replace(/^[-:.)\]]+\s*/, '')
+    .trim();
+
 const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
   const [currentNodeId, setCurrentNodeId] = useState(null);
   const [feedbackText, setFeedbackText] = useState(null);
@@ -11,6 +17,8 @@ const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
   const [cameraError, setCameraError] = useState('');
   const [storyCompleted, setStoryCompleted] = useState(false);
   const challenges = lesson?.challenges || [];
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const token = localStorage.getItem('authToken');
 
   const {
     videoRef,
@@ -81,9 +89,27 @@ const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
     return challenges.find((c) => c.id === currentNodeId);
   }, [currentNodeId, challenges]);
 
+  const submitChoiceProgress = async (optionId) => {
+    if (!token || !currentNode?.id) return;
+
+    try {
+      await fetch(`${API_URL}/children-courses/challenge/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ challengeId: currentNode.id, selectedOptionId: optionId }),
+      });
+    } catch (error) {
+      console.warn('Could not sync story challenge progress:', error);
+    }
+  };
+
   const handleOptionSelect = (optionId) => {
     if (showingFeedback) return; // Prevent clicking while feedback is showing
     setSelectedOptionId(optionId);
+    submitChoiceProgress(optionId);
 
     const selected = currentNode.options.find((opt) => opt.id === optionId);
     if (!selected) return;
@@ -233,10 +259,11 @@ const ChildrenInteractiveStory = ({ lesson, onBack, onComplete }) => {
                 onClick={() => handleOptionSelect(option.id)}
                 disabled={showingFeedback}
               >
-                {option.imageSrc && (
+                {/* Only show image icon after feedback is shown (don't reveal correct answer upfront) */}
+                {showingFeedback && option.imageSrc && (
                   <img src={option.imageSrc} alt={option.text} className="option-icon" />
                 )}
-                <span>{option.text}</span>
+                <span>{normalizeOptionText(option.text)}</span>
               </button>
             ))}
           </div>

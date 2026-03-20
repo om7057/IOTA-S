@@ -27,7 +27,31 @@ const ExpressionPage = () => {
     );
   }
 
-  // Fetch topics and posts
+  const getDisplayName = (u) => {
+    if (!u) return 'Unknown';
+    return u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Unknown';
+  };
+
+  const getPostCategoriesForTopic = (topic) => {
+    if (!topic?.category) return [];
+    switch (topic.category) {
+      case 'news':
+        return ['news'];
+      case 'learning':
+        return ['resource', 'question', 'advice'];
+      case 'wellbeing':
+        return ['story', 'advice', 'question'];
+      case 'safety':
+        return ['advice', 'news', 'resource'];
+      case 'emotions':
+        return ['story', 'question'];
+      case 'general':
+      default:
+        return [];
+    }
+  };
+
+  // Fetch topics and social posts
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -35,23 +59,31 @@ const ExpressionPage = () => {
           fetch(`${API_URL}/topics`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
-          fetch(`${API_URL}/topics/posts`, {
+          fetch(`${API_URL}/social/feed/${user?.id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
         ]);
 
         if (topicsRes.ok) {
-          const topicsData = await topicsRes.json();
-          setTopics(topicsData);
-          if (topicsData.length > 0) {
+          const topicsJson = await topicsRes.json();
+          const topicsData = Array.isArray(topicsJson) ? topicsJson : (topicsJson?.data || []);
+          setTopics(Array.isArray(topicsData) ? topicsData : []);
+          if (Array.isArray(topicsData) && topicsData.length > 0) {
             setSelectedTopic(topicsData[0].id);
           }
+        } else {
+          setTopics([]);
         }
 
         if (postsRes.ok) {
-          const postsData = await postsRes.json();
-          setPosts(postsData);
-          setFilteredPosts(postsData);
+          const postsJson = await postsRes.json();
+          const postsData = Array.isArray(postsJson) ? postsJson : (postsJson?.data || []);
+          const safePosts = Array.isArray(postsData) ? postsData : [];
+          setPosts(safePosts);
+          setFilteredPosts(safePosts);
+        } else {
+          setPosts([]);
+          setFilteredPosts([]);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -61,19 +93,25 @@ const ExpressionPage = () => {
       }
     };
 
-    if (token) {
+    if (token && user?.id) {
       fetchData();
     }
-  }, [token]);
+  }, [token, user?.id]);
 
-  // Filter posts by topic
+  // Filter posts by topic category mapping
   useEffect(() => {
     if (selectedTopic) {
-      setFilteredPosts(posts.filter(post => post.topicId === selectedTopic));
+      const topic = topics.find((t) => t.id === selectedTopic);
+      const allowedCategories = getPostCategoriesForTopic(topic);
+      if (allowedCategories.length === 0) {
+        setFilteredPosts(posts);
+      } else {
+        setFilteredPosts(posts.filter((post) => allowedCategories.includes(post.category)));
+      }
     } else {
       setFilteredPosts(posts);
     }
-  }, [selectedTopic, posts]);
+  }, [selectedTopic, posts, topics]);
 
   // Handle post creation
   const handleCreatePost = async () => {
@@ -82,13 +120,12 @@ const ExpressionPage = () => {
       return;
     }
 
-    if (!selectedTopic) {
-      toast.error('Please select a topic first');
-      return;
-    }
-
     try {
-      const response = await fetch(`${API_URL}/topics/${selectedTopic}/posts`, {
+      const selectedTopicObj = topics.find((t) => t.id === selectedTopic);
+      const topicCategories = getPostCategoriesForTopic(selectedTopicObj);
+      const mappedCategory = topicCategories[0] || 'other';
+
+      const response = await fetch(`${API_URL}/social`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,12 +134,15 @@ const ExpressionPage = () => {
         body: JSON.stringify({
           title: newPost.title,
           content: newPost.content,
-          userId: user.id
+          userId: user.id,
+          category: mappedCategory,
+          isAnonymous: false,
         })
       });
 
       if (response.ok) {
-        const createdPost = await response.json();
+        const createdJson = await response.json();
+        const createdPost = createdJson?.data || createdJson;
         setPosts([createdPost, ...posts]);
         setNewPost({ title: '', content: '' });
         setShowModal(false);
@@ -119,13 +159,12 @@ const ExpressionPage = () => {
   // Handle like
   const handleLike = async (postId) => {
     try {
-      const response = await fetch(`${API_URL}/topics/posts/${postId}/like`, {
+      const response = await fetch(`${API_URL}/social/${postId}/like`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ userId: user.id })
+        }
       });
 
       if (response.ok) {
@@ -157,7 +196,7 @@ const ExpressionPage = () => {
         {/* Topic Tabs */}
         <div className="mb-6 overflow-x-auto pb-2">
           <div className="flex gap-2 min-w-max">
-            {topics.map(topic => (
+            {(Array.isArray(topics) ? topics : []).map(topic => (
               <button
                 key={topic.id}
                 onClick={() => setSelectedTopic(topic.id)}
@@ -191,7 +230,7 @@ const ExpressionPage = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="font-semibold text-gray-900">{post.title}</p>
-                    <p className="text-sm text-gray-500">{post.author?.firstName} • {new Date(post.createdAt).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-500">{post.isAnonymous ? (post.anonymousName || 'Anonymous') : getDisplayName(post.creator)} • {new Date(post.createdAt).toLocaleDateString()}</p>
                   </div>
                 </div>
 

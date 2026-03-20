@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./pages/Login";
@@ -7,21 +6,13 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import ProfilePage from "./pages/ProfilePage";
 import JournalPage from "./pages/JournalPage";
-import StoriesPage from "./pages/StoriesPage";
-import ExpressionPage from "./pages/ExpressionPage";
 import GroupsPage from "./pages/GroupsPage";
-import QueriesPage from "./pages/QueriesPage";
+import GroupChatPage from "./pages/GroupChatPage";
 import ResourcesPage from "./pages/ResourcesPage";
-import MoodTracker from "./components/MoodTracker";
 import Levels from "./components/Levels";
 import Quiz from "./components/Quiz";
 import Leaderboard from "./components/LeaderBoard";
 import Live from "./components/Live";
-import StoryPlayer from "./components/StoryPlayer";
-import StoryLearning from "./components/StoryLearning";
-import Stories from "./components/Stories";
-import StoryWithChallenges from "./components/StoryWithChallenges";
-import UnitsAndLessons from "./components/UnitsAndLessons";
 import QuizLandingPage from "./pages/QuizLandingPage";
 import TeenForum from "./pages/TeenForum";
 import TeenJournal from "./pages/TeenJournal";
@@ -41,35 +32,16 @@ import LoadingSpinner from "./components/common/LoadingSpinner";
 
 const AppContent = () => {
   const { isLoading, isSignedIn, age } = useAuth();
-  const [emotionTimeLine, setEmotionTimeLine] = useState([]);
-  const [isLoadingApp, setIsLoadingApp] = useState(false);
 
-  // All hooks must be at the top - before any conditionals
-  useEffect(() => {
-    console.log("Is signed in:", isSignedIn);
-  }, [isSignedIn]);
-
-  // Move this before the early returns
-  useEffect(() => {
-    if (isSignedIn) {
-      // Only run emotion data fetch when signed in
-      const handleSetEmotionData = (emotionData) => {
-        setEmotionTimeLine(emotionData);
-      };
-    }
-  }, [isSignedIn]);
-
-  const handleLoading = (status) => {
-    setIsLoadingApp(status);
-  };
+  const handleLoading = () => {};
 
   if (isLoading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "linear-gradient(to right, #f0f9ff, #dbeafe)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "radial-gradient(circle at top left, rgba(13,122,123,0.08), transparent 40%), #f4f7f8" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ width: "64px", height: "64px", border: "4px solid #bae6fd", borderTop: "4px solid #0284c7", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto", marginBottom: "16px" }}></div>
-          <p style={{ fontSize: "20px", fontWeight: "600", color: "#374151" }}>Loading...</p>
-          <p style={{ fontSize: "14px", color: "#9ca3af" }}>Initializing authentication</p>
+          <div style={{ width: "58px", height: "58px", border: "3px solid #dbe4e8", borderTop: "3px solid #0d7a7b", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto", marginBottom: "16px" }}></div>
+          <p style={{ fontSize: "20px", fontWeight: "600", color: "#0f1720" }}>Loading...</p>
+          <p style={{ fontSize: "14px", color: "#60707b" }}>Initializing authentication</p>
           <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
@@ -92,24 +64,16 @@ const AppContent = () => {
         <Route path="/" element={<Home />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/journal" element={<JournalPage />} />
-        <Route path="/stories" element={<StoriesPage />} />
-        <Route path="/expression" element={<ExpressionPage />} />
+        <Route path="/expression" element={<SocialFeed />} />
         <Route path="/groups" element={<GroupsPage />} />
-        <Route path="/queries" element={<QueriesPage />} />
+        <Route path="/groups/:groupId" element={<GroupChatPage />} />
         <Route path="/resources" element={<ResourcesPage />} />
-        <Route path="/mood" element={<MoodTracker onLoading={handleLoading} />} />
         <Route path="/levels" element={<Levels onLoading={handleLoading} />} />
         <Route path="/quiz" element={<QuizLandingPage />} />
         <Route path="/quiz/:quizId" element={<Quiz onLoading={handleLoading} />} />
         <Route path="/quiz-landing" element={<QuizLandingPage />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/live" element={<Live />} />
-        <Route path="/story/:storyId" element={<StoryPlayer />} />
-        <Route path="/story-play/:storyId" element={<StoryPlayer />} />
-        <Route path="/story-learning/:id" element={<StoryLearning />} />
-        <Route path="/stories-list" element={<Stories />} />
-        <Route path="/units/:topicId" element={<UnitsAndLessons />} />
-        <Route path="/lesson/:lessonId" element={<StoryWithChallenges />} />
         <Route path="/loading" element={<LoadingSpinner />} />
 
         {/* Child Mode Routes (age < 13) - Phase 8A */}
@@ -134,7 +98,7 @@ const AppContent = () => {
             <Route path="/teen/messages" element={<TeenMessages />} />
             <Route path="/teen/chatbot" element={<Chatbot />} />
             <Route path="/teen/forums" element={<Forums />} />
-            <Route path="/teen/social" element={<SocialFeed />} />
+            <Route path="/teen/social" element={<Navigate to="/expression" replace />} />
           </>
         )}
 

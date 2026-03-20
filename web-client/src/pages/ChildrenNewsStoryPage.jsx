@@ -4,6 +4,12 @@ import useEmotionDetection from '../components/useEmotionDetection';
 import EmotionSummary from '../components/EmotionSummary';
 import './ChildrenLesson.css';
 
+const normalizeOptionText = (text = '') =>
+  String(text)
+    .replace(/^[\s\uFE0F\u200D\p{Extended_Pictographic}✓✔✗✕☑☒]+/gu, '')
+    .replace(/^[-:.)\]]+\s*/, '')
+    .trim();
+
 const ChildrenNewsStoryPage = () => {
   const { storyId } = useParams();
   const navigate = useNavigate();
@@ -336,7 +342,7 @@ const ChildrenNewsStoryPage = () => {
                     <span className="option-letter">
                       {String.fromCharCode(65 + idx)}
                     </span>
-                    <span className="option-text">{option.text}</span>
+                    <span className="option-text">{normalizeOptionText(option.text)}</span>
                   </button>
                 ))
               ) : (

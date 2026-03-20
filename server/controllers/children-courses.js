@@ -7,6 +7,7 @@ import {
   ChildrenProgress,
   ChildrenChallengeProgress,
   NewsStory,
+  ParentalAccount,
 } from '../models/index.js';
 import { Op } from 'sequelize';
 import { logger } from '../utils/logger.js';
@@ -299,6 +300,54 @@ export const submitChallenge = async (req, res) => {
     progress.correct = selectedOption.correct;
     await progress.save();
 
+    let alertTriggered = false;
+
+    // When a child repeatedly gets the same challenge wrong, notify linked parents.
+    if (!selectedOption.correct && progress.attempts === 3) {
+      const parentLinks = await ParentalAccount.findAll({
+        where: {
+          childUserId: userId,
+          isActive: true,
+          allowNotifications: true,
+        },
+      });
+
+      const alert = {
+        id: `parent_alert_${Date.now()}`,
+        type: 'repeated_wrong_attempts',
+        challengeId: challenge.id,
+        challengeQuestion: challenge.question,
+        attempts: progress.attempts,
+        createdAt: new Date().toISOString(),
+      };
+
+      for (const link of parentLinks) {
+        const metadata = link.metadata || {};
+        const alerts = Array.isArray(metadata.alerts) ? metadata.alerts : [];
+        const nextAlerts = [alert, ...alerts].slice(0, 50);
+
+        await link.update({
+          metadata: {
+            ...metadata,
+            alerts: nextAlerts,
+          },
+        });
+
+        if (global.notificationService) {
+          global.notificationService.notifyUser(link.parentUserId, {
+            type: 'child_learning_alert',
+            title: 'Child learning support alert',
+            message: 'Your child may need help with a challenge after multiple attempts.',
+            action: `parental:child:${userId}`,
+            childUserId: userId,
+            challengeId: challenge.id,
+          });
+        }
+      }
+
+      alertTriggered = parentLinks.length > 0;
+    }
+
     res.json({
       success: true,
       data: {
@@ -306,6 +355,7 @@ export const submitChallenge = async (req, res) => {
         feedback: selectedOption.feedback,
         message: selectedOption.correct ? '✅ Correct!' : '❌ Try again',
         attempts: progress.attempts,
+        alertTriggered,
       },
     });
   } catch (error) {

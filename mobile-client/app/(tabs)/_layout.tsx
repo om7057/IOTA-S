@@ -52,13 +52,6 @@ export default function TabLayout() {
             }}
           />
           <Tabs.Screen
-            name="mood-tracker"
-            options={{
-              title: 'Mood',
-              tabBarIcon: ({ color }) => <FontAwesome name="smile-o" size={24} color={color} />,
-            }}
-          />
-          <Tabs.Screen
             name="quizzes"
             options={{
               title: 'Quizzes',

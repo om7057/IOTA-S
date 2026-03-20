@@ -5,6 +5,12 @@ import StoryEmotionMonitor from "./StoryEmotionMonitor";
 import EmotionSummary from "./EmotionSummary";
 import { Loader2, AlertCircle, Search, Sparkles, ChevronLeft, Lightbulb, Video } from "lucide-react";
 
+const normalizeOptionText = (text = "") =>
+  String(text)
+    .replace(/^[\s\uFE0F\u200D\p{Extended_Pictographic}✓✔✗✕☑☒]+/gu, "")
+    .replace(/^[-:.)\]]+\s*/, "")
+    .trim();
+
 const StoryPlayer = () => {
   const { storyId } = useParams();
   const resolvedStoryId = storyId;
@@ -16,6 +22,7 @@ const StoryPlayer = () => {
   const [storyCompleted, setStoryCompleted] = useState(false);
   const [sceneTransition, setSceneTransition] = useState(false);
   const [cameraError, setCameraError] = useState("");
+  const [openingQuiz, setOpeningQuiz] = useState(false);
 
   const {
     videoRef,
@@ -131,6 +138,33 @@ const StoryPlayer = () => {
     }, 500);
   };
 
+  const handleOpenStoryQuiz = async () => {
+    if (!resolvedStoryId) {
+      navigate('/quiz-landing');
+      return;
+    }
+
+    setOpeningQuiz(true);
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const res = await fetch(`${apiUrl}/quizzes/story/${resolvedStoryId}`);
+      const payload = await res.json();
+      const mappedQuiz = payload?.data;
+
+      if (res.ok && mappedQuiz?.id) {
+        navigate(`/quiz/${mappedQuiz.id}`);
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to open story quiz:', err);
+    } finally {
+      setOpeningQuiz(false);
+    }
+
+    navigate('/quiz-landing');
+  };
+
   if (loading) return (
     <div className="max-w-4xl mx-auto flex items-center justify-center min-h-[60vh]">
       <div className="card p-8 text-center">
@@ -222,12 +256,12 @@ const StoryPlayer = () => {
               <button
                 key={index}
                 className="w-full p-4 rounded-xl text-left transition-all duration-200 bg-white hover:bg-sky-50 border-2 border-transparent hover:border-sky-200 flex items-center gap-4 shadow-sm hover:shadow"
-                onClick={() => handleOptionClick(option.to, option.text)}
+                onClick={() => handleOptionClick(option.to, normalizeOptionText(option.text))}
               >
                 <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-sky-100 text-sky-600 font-semibold">
                   {String.fromCharCode(65 + index)}
                 </span>
-                <span className="font-medium text-gray-700">{option.text}</span>
+                <span className="font-medium text-gray-700">{normalizeOptionText(option.text)}</span>
               </button>
             ))}
           </div>
@@ -249,11 +283,12 @@ const StoryPlayer = () => {
             
             <div className="text-center pt-4">
               <button
-                onClick={() => navigate('/quiz-landing')}
+                onClick={handleOpenStoryQuiz}
+                disabled={openingQuiz}
                 className="btn bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 hover:shadow-xl text-lg px-8"
               >
                 <Lightbulb className="w-5 h-5 mr-2" />
-                Go to Quizzes
+                {openingQuiz ? 'Opening Quiz...' : 'Go to Quizzes'}
               </button>
             </div>
           </div>

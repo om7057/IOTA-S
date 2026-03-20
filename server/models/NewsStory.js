@@ -1,10 +1,12 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/sequelize.js';
+import { sanitizeStoryJson } from '../utils/sanitization.js';
 
 /**
  * NewsStory Model
  * Stores stories generated from news articles using AI
  * Integrates with news fetcher service
+ * Automatically sanitizes story options to remove emoji/special characters
  */
 const NewsStory = sequelize.define(
   'NewsStory',
@@ -84,6 +86,20 @@ const NewsStory = sequelize.define(
     tableName: 'news_stories',
     paranoid: true,
     timestamps: true,
+    hooks: {
+      beforeCreate: (newsStory) => {
+        // Sanitize story JSON options before saving
+        if (newsStory.storyJson) {
+          newsStory.storyJson = sanitizeStoryJson(newsStory.storyJson);
+        }
+      },
+      beforeUpdate: (newsStory) => {
+        // Sanitize story JSON options on update
+        if (newsStory.changed('storyJson') && newsStory.storyJson) {
+          newsStory.storyJson = sanitizeStoryJson(newsStory.storyJson);
+        }
+      },
+    },
   }
 );
 

@@ -12,29 +12,41 @@ const Achievements = () => {
   const [stats, setStats] = useState({ total: 0, completed: 0, totalPoints: 0 });
 
   useEffect(() => {
-    fetchAchievements();
+    if (user?.id) {
+      fetchAchievements();
+    }
     fetchBadges();
   }, [user?.id]);
 
   const fetchAchievements = async () => {
+    if (!user?.id) {
+      setAchievements([]);
+      setStats({ total: 0, completed: 0, totalPoints: 0 });
+      return;
+    }
+
     try {
       const response = await axios.get(`/api/achievements/user/${user.id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
       });
-      setAchievements(response.data.data.achievements);
-      setStats(response.data.data.stats);
+      const payload = response?.data?.data || {};
+      setAchievements(Array.isArray(payload.achievements) ? payload.achievements : []);
+      setStats(payload.stats || { total: 0, completed: 0, totalPoints: 0 });
     } catch (error) {
       console.error('Error fetching achievements:', error);
+      setAchievements([]);
+      setStats({ total: 0, completed: 0, totalPoints: 0 });
     }
   };
 
   const fetchBadges = async () => {
     try {
       const response = await axios.get('/api/achievements/badges');
-      setBadges(response.data.data);
+      setBadges(Array.isArray(response?.data?.data) ? response.data.data : []);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching badges:', error);
+      setBadges([]);
       setLoading(false);
     }
   };
@@ -155,7 +167,7 @@ const Achievements = () => {
 
                 {isUnlocked ? (
                   <div className="unlocked-info">
-                    <p>✓ Unlocked {new Date(achievement.unlockedAt).toLocaleDateString()}</p>
+                    <p>✓ Unlocked {achievement?.unlockedAt ? new Date(achievement.unlockedAt).toLocaleDateString() : 'recently'}</p>
                   </div>
                 ) : (
                   <div className="progress-bar">

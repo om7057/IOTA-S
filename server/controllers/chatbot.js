@@ -56,9 +56,18 @@ const getBotResponse = (userMessage, sentiment) => {
 // Get all chat messages for user
 export const getUserChatHistory = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user?.id || req.params.userId;
+    const requestedUserId = req.params.userId;
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'User ID required' });
+    }
+
+    if (req.user?.id && requestedUserId && requestedUserId !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
 
     const messages = await ChatMessage.findAndCountAll({
       where: { userId },
@@ -83,7 +92,8 @@ export const getUserChatHistory = async (req, res) => {
 // Send message to chatbot
 export const sendChatMessage = async (req, res) => {
   try {
-    const { userId, message } = req.body;
+    const { message } = req.body;
+    const userId = req.user?.id || req.body.userId;
 
     if (!userId || !message) {
       return res.status(400).json({ success: false, error: 'User ID and message required' });
@@ -107,7 +117,7 @@ export const sendChatMessage = async (req, res) => {
       message,
       sender: 'user',
       sentiment,
-      tags: [sentiment],
+      tags: ['query', sentiment],
     });
 
     // Save bot response
@@ -145,7 +155,16 @@ export const sendChatMessage = async (req, res) => {
 // Get chat statistics
 export const getChatStats = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user?.id || req.params.userId;
+    const requestedUserId = req.params.userId;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'User ID required' });
+    }
+
+    if (req.user?.id && requestedUserId && requestedUserId !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
 
     const messages = await ChatMessage.findAll({
       where: { userId },
@@ -178,7 +197,16 @@ export const getChatStats = async (req, res) => {
 // Clear chat history for user
 export const clearChatHistory = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user?.id || req.params.userId;
+    const requestedUserId = req.params.userId;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'User ID required' });
+    }
+
+    if (req.user?.id && requestedUserId && requestedUserId !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
 
     const deleted = await ChatMessage.destroy({ where: { userId } });
 

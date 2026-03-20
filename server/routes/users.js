@@ -56,7 +56,7 @@ router.delete('/:userId', verifyToken, userController.deleteUser);
  * GET /api/users/:userId/progress
  * Get user progress statistics
  * Params: userId - UUID of user
- * Returns: { moodsLogged, journalsWritten, storiesCompleted, stars, badges }
+ * Returns: { journalsWritten, storiesCompleted, stars, badges }
  */
 router.get('/:userId/progress', userController.getUserProgress);
 
