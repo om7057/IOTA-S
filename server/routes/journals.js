@@ -24,6 +24,12 @@ router.post('/', verifyToken, journalController.createJournal);
 router.get('/', verifyToken, journalController.getJournals);
 
 /**
+ * POST /api/journals/seed-defaults
+ * Seed default journal entries for the authenticated user (if none exist)
+ */
+router.post('/seed-defaults', verifyToken, journalController.seedDefaultJournals);
+
+/**
  * GET /api/journals/search
  * Search journal entries by keyword (protected)
  * Query: q (search query), page, limit

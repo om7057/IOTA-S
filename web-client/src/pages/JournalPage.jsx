@@ -30,14 +30,27 @@ const JournalPage = () => {
     }
   }, [user?.id, token]);
 
-  const fetchJournals = async () => {
+  const fetchJournals = async (isRetryAfterSeed = false) => {
     try {
       const response = await fetch(`${apiUrl}/journals?limit=100`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
-        setJournals(Array.isArray(data?.journals) ? data.journals : []);
+        const list = Array.isArray(data?.journals) ? data.journals : [];
+        if (list.length === 0 && !isRetryAfterSeed) {
+          // Seed default entries on first visit
+          try {
+            await fetch(`${apiUrl}/journals/seed-defaults`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            return fetchJournals(true);
+          } catch (seedErr) {
+            console.error('Error seeding defaults:', seedErr);
+          }
+        }
+        setJournals(list);
       } else {
         setJournals([]);
       }
@@ -167,7 +180,7 @@ const JournalPage = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{selectedJournal.title}</h1>
               <p className="text-sm text-gray-500 mt-1">
-                {new Date(selectedJournal.createdAt).toLocaleDateString('en-US', {
+                {new Date(selectedJournal.entryDate || selectedJournal.createdAt).toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -400,7 +413,7 @@ const JournalPage = () => {
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900">{journal.title}</h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    {new Date(journal.createdAt).toLocaleDateString('en-US', {
+                    {new Date(journal.entryDate || journal.createdAt).toLocaleDateString('en-US', {
                       weekday: 'short',
                       month: 'short',
                       day: 'numeric'

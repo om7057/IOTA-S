@@ -402,6 +402,148 @@ export const searchJournals = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /api/journals/seed-defaults
+ * Seed default journal entries for the authenticated user (if they have none)
+ */
+export const seedDefaultJournals = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const userId = req.user.id;
+
+    // Check if user already has journals
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      const existing = await db.collection('journals').countDocuments({ userId });
+      if (existing > 0) {
+        return res.status(200).json({ message: 'Journals already exist', seeded: false });
+      }
+    } else {
+      const existing = await Journal.count({ where: { userId } });
+      if (existing > 0) {
+        return res.status(200).json({ message: 'Journals already exist', seeded: false });
+      }
+    }
+
+    const now = new Date();
+    const defaultEntries = [
+      {
+        title: "My mind won't slow down",
+        content: "Today felt exhausting, even though I didn't do much physically.\nMy thoughts just kept running non-stop — replaying conversations, worrying about things that haven't even happened.\n\nI wish I could just switch my brain off for a while.",
+        emotion: 'anxious',
+        tags: ['worried', 'school'],
+      },
+      {
+        title: "I tried to study but couldn't focus",
+        content: "I sat down with my books for hours, but nothing really went in.\nI kept getting distracted or just staring at the same page.\n\nIt makes me feel guilty, like I'm wasting time.",
+        emotion: 'stressed',
+        tags: ['homework', 'school'],
+      },
+      {
+        title: 'Not sure about my friendships',
+        content: "I don't know if I'm overthinking, but I feel like I'm not really important to my friends.\nSometimes I feel like I'm just there… not actually included.\n\nI wish I had someone I could talk to without feeling weird.",
+        emotion: 'sad',
+        tags: ['friends'],
+      },
+      {
+        title: 'Alone even in a crowd',
+        content: "I was around people all day, but still felt completely alone.\nIt's strange how you can be surrounded by others and still feel invisible.\n\nI don't know how to explain this feeling to anyone.",
+        emotion: 'sad',
+        tags: ['friends'],
+      },
+      {
+        title: 'No energy today',
+        content: "I didn't feel like doing anything today. Even small tasks felt too much.\nI just wanted to stay in bed and avoid everything.\n\nI hope tomorrow feels a little better.",
+        emotion: 'anxious',
+        tags: ['worried'],
+      },
+      {
+        title: 'Something they said stayed with me',
+        content: "Someone said something casually today, but it stuck with me more than it should have.\nI keep replaying it in my head and wondering if they meant it.\n\nMaybe I'm just sensitive… but it still hurts.",
+        emotion: 'sad',
+        tags: ['friends'],
+      },
+      {
+        title: 'Scrolling made me feel worse',
+        content: "I spent a lot of time on social media today, and honestly, it just made me feel worse about myself.\nEveryone seems so perfect and happy.\n\nI know it's not real, but it still affects me.",
+        emotion: 'anxious',
+        tags: ['worried'],
+      },
+      {
+        title: 'I kept everything inside again',
+        content: "I wanted to talk about how I felt today, but I didn't.\nI just smiled and acted normal like always.\n\nI don't know why it's so hard to open up.",
+        emotion: 'confused',
+        tags: ['family'],
+      },
+      {
+        title: 'Maybe I need help',
+        content: "I've been feeling off for a while now, and I think I shouldn't ignore it anymore.\nMaybe talking to someone could actually help.\n\nIt's scary, but I think I should try.",
+        emotion: 'neutral',
+        tags: ['worried'],
+      },
+      {
+        title: 'A small win today',
+        content: "I actually completed something I had been avoiding for days.\nIt wasn't a big task, but it felt good to finally do it.\n\nMaybe progress doesn't have to be huge.",
+        emotion: 'calm',
+        tags: ['learning'],
+      },
+      {
+        title: 'Trying to understand myself',
+        content: "I've been thinking a lot about who I am and what I want.\nSometimes I feel like I don't even know myself properly.\n\nMaybe that's okay… maybe I'm still figuring things out.",
+        emotion: 'calm',
+        tags: ['learning'],
+      },
+      {
+        title: 'Felt really anxious today',
+        content: "My heart was racing for no clear reason today.\nEven small things felt overwhelming.\n\nI tried to calm down, but it took a while.",
+        emotion: 'anxious',
+        tags: ['worried'],
+      },
+    ];
+
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      const docs = defaultEntries.map((entry, i) => ({
+        _id: uuidv4(),
+        userId,
+        ...entry,
+        prompt: null,
+        isPrivate: true,
+        attachments: [],
+        entryDate: new Date(now.getTime() - i * 86400000), // stagger by 1 day each
+        createdAt: new Date(now.getTime() - i * 86400000),
+        updatedAt: now,
+        deletedAt: null,
+      }));
+      await db.collection('journals').insertMany(docs);
+      logger.info('Seeded default journals (Mongo)', { userId, count: docs.length });
+      return res.status(201).json({ message: 'Default journals seeded', seeded: true, count: docs.length });
+    }
+
+    const rows = defaultEntries.map((entry, i) => {
+      const staggerDate = new Date(now.getTime() - i * 86400000); // staggered by 1 day
+      return {
+        userId,
+        ...entry,
+        isPrivate: true,
+        entryDate: staggerDate,
+        createdAt: staggerDate,
+        updatedAt: staggerDate,
+      };
+    });
+    const created = await Journal.bulkCreate(rows);
+    logger.info('Seeded default journals', { userId, count: created.length });
+
+    return res.status(201).json({ message: 'Default journals seeded', seeded: true, count: created.length });
+  } catch (error) {
+    logger.error('Seed default journals error', { error: error.message });
+    next(error);
+  }
+};
+
 export default {
   createJournal,
   getJournals,
@@ -409,4 +551,5 @@ export default {
   updateJournal,
   deleteJournal,
   searchJournals,
+  seedDefaultJournals,
 };

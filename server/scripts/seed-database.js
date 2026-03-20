@@ -26,6 +26,12 @@ const main = async () => {
     await sequelize.authenticate();
     console.log('✅ Database connection verified');
 
+    // Auto-create all tables from Sequelize models if they don't exist.
+    // This ensures seeding works on a fresh DB (e.g. after docker compose down -v).
+    console.log('\n📦 Ensuring database schema...');
+    await sequelize.sync();
+    console.log('✅ Database schema ready');
+
     // Run seed functions
     console.log('\n📚 Seeding stories...');
     await seedStories();

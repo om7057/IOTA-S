@@ -11,6 +11,9 @@ const router = express.Router();
 // Create parental link (parent adds child)
 router.post('/link', verifyToken, parentalController.createParentalLink);
 
+// Seed default dummy parental data for demonstration
+router.post('/seed-defaults', verifyToken, parentalController.seedDefaultParentalData);
+
 // Child approves parental link
 router.post('/link/:parentalAccountId/approve', verifyToken, parentalController.approveParentalLink);
 

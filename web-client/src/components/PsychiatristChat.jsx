@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, X, Info, AlertCircle } from 'lucide-react';
-import '../styles/PsychiatristChat.css';
 
 const PsychiatristChat = ({ psychiatrist, userId, onClose }) => {
   const [messages, setMessages] = useState([]);
@@ -107,80 +106,101 @@ const PsychiatristChat = ({ psychiatrist, userId, onClose }) => {
   };
 
   return (
-    <div className="psychiatrist-chat-container">
-      <div className="chat-header">
-        <div className="doctor-info">
+    <div className="flex flex-col h-full bg-white rounded-2xl border-2 border-gray-100 shadow-sm overflow-hidden min-h-[500px]">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex items-center gap-3">
           <img
-            src={psychiatrist.avatarUrl}
+            src={psychiatrist.avatarUrl || `https://ui-avatars.com/api/?name=${psychiatrist.firstName}+${psychiatrist.lastName}&background=random`}
             alt={psychiatrist.firstName}
-            className="doctor-avatar"
+            className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
           />
           <div>
-            <h3>Dr. {psychiatrist.firstName} {psychiatrist.lastName}</h3>
-            <p className="specialization">
+            <h3 className="font-bold text-gray-900 leading-tight">
+              Dr. {psychiatrist.firstName} {psychiatrist.lastName}
+            </h3>
+            <p className="text-sm text-sky-600 font-medium">
               {psychiatrist.specialization}
             </p>
           </div>
         </div>
-        <button onClick={onClose} className="close-btn">
-          <X size={24} />
+        <button 
+          onClick={onClose} 
+          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X size={20} />
         </button>
       </div>
 
       {error && (
-        <div className="error-alert">
-          <AlertCircle size={18} />
+        <div className="flex items-center gap-2 m-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
+          <AlertCircle size={16} />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="chat-messages">
-        <div className="welcome-message">
-          <Info size={20} />
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/30">
+        <div className="flex items-start gap-3 bg-sky-50 text-sky-900 p-4 rounded-xl border border-sky-100/50">
+          <div className="p-1 bg-sky-100 rounded-full shrink-0">
+            <Info size={18} className="text-sky-600" />
+          </div>
           <div>
-            <h4>Welcome to private session with Dr. {psychiatrist.firstName}</h4>
-            <p>
+            <h4 className="font-bold mb-1">Welcome to private session with Dr. {psychiatrist.firstName}</h4>
+            <p className="text-sm text-sky-800 leading-relaxed">
               This is a confidential and safe space to discuss your thoughts and feelings.
               Remember, there are no judgments here - only support and understanding.
             </p>
           </div>
         </div>
 
-        {messages.map((msg) => (
-          <div
-            key={msg.id || msg.createdAt}
-            className={`message ${msg.sender === 'teen' ? 'user-message' : 'doctor-message'}`}
-          >
-            <div className="message-content">
-              <p>{msg.message}</p>
-              <span className="timestamp">
+        {messages.map((msg) => {
+          const isUser = msg.sender === 'teen';
+          return (
+            <div
+              key={msg.id || msg.createdAt}
+              className={`flex flex-col max-w-[80%] ${isUser ? 'ml-auto items-end' : 'mr-auto items-start'}`}
+            >
+              <div 
+                className={`px-4 py-2.5 rounded-2xl ${
+                  isUser 
+                    ? 'bg-sky-500 text-white rounded-br-sm' 
+                    : 'bg-white border border-gray-100 shadow-sm text-gray-800 rounded-bl-sm'
+                }`}
+              >
+                <p className="leading-relaxed">{msg.message}</p>
+              </div>
+              <span className="text-[11px] text-gray-400 mt-1 px-1 font-medium">
                 {new Date(msg.createdAt || msg.timestamp).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
               </span>
             </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
+          );
+        })}
+        <div ref={messagesEndRef} className="h-2" />
       </div>
 
-      <form onSubmit={sendMessage} className="chat-input-form">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type your message... (Your responses are private and secure)"
-          className="chat-input"
-          disabled={loading || !conversationId}
-        />
-        <button
-          type="submit"
-          className="send-btn"
-          disabled={loading || !message.trim() || !conversationId}
-        >
-          <Send size={20} />
-        </button>
+      {/* Input Form */}
+      <form onSubmit={sendMessage} className="p-4 bg-white border-t border-gray-100">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type your message... (Private and secure)"
+            className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all text-sm"
+            disabled={loading || !conversationId}
+          />
+          <button
+            type="submit"
+            className="p-3 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:hover:bg-sky-500 text-white rounded-xl transition-colors shadow-sm"
+            disabled={loading || !message.trim() || !conversationId}
+          >
+            <Send size={18} className={message.trim() ? "translate-x-0.5 -translate-y-0.5 transition-transform" : ""} />
+          </button>
+        </div>
       </form>
     </div>
   );

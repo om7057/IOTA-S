@@ -368,8 +368,8 @@ export const getChildActivity = async (req, res) => {
             totalPoints: progress?.totalPoints ?? 0,
             journalEntries: recentJournals.length,
           },
-          recentMoods,
-          recentJournalsvityAt: child.updatedAt,
+          recentJournals,
+          activityAt: child.updatedAt,
         },
       },
     });
@@ -453,6 +453,130 @@ export const removeParentalLink = async (req, res) => {
   }
 };
 
+/**
+ * Seed dummy parental control data for demonstration
+ */
+export const seedDefaultParentalData = async (req, res) => {
+  try {
+    const parentId = req.user?.id;
+    if (!parentId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Check if the parent already has links
+    const existingLinks = await ParentalAccount.count({ where: { parentUserId: parentId } });
+    if (existingLinks > 0) {
+      return res.status(400).json({ success: false, message: 'Parent already has linked children. Skipping seed.' });
+    }
+
+    // 1. Create a sample child user
+    const dummyChildId = uuidv4();
+    const demoEmail = `emma.smith.${Date.now()}@example.com`;
+    await User.create({
+      id: dummyChildId,
+      email: demoEmail,
+      username: `emma_smith_${Date.now()}`,
+      passwordHash: 'seeded_hash_not_usable',
+      firstName: 'Emma',
+      lastName: 'Smith',
+      role: 'child',
+      age: 10,
+    });
+
+    // 2. Create the parental link (pre-approved)
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60000);
+    const link = await ParentalAccount.create({
+      childUserId: dummyChildId,
+      parentUserId: parentId,
+      relationship: 'parent',
+      isActive: true, // Pre-approved
+      approvedAt: thirtyMinsAgo,
+      screenTimeLimit: 120,
+      contentFilter: 'moderate',
+      metadata: {
+        alerts: [
+          {
+            id: uuidv4(),
+            type: 'Restricted Content Alert',
+            attempts: 1,
+            createdAt: new Date(Date.now() - 3600000).toISOString(), 
+          },
+          {
+            id: uuidv4(),
+            type: 'Screen Time Approaching Limit',
+            attempts: null,
+            createdAt: new Date(Date.now() - 7200000).toISOString(),
+          }
+        ]
+      }
+    });
+
+    // 3. Seed ChildrenProgress (Points & Hearts)
+    await ChildrenProgress.create({
+      userId: dummyChildId,
+      hearts: 4,
+      points: 120,
+      totalPoints: 1550,
+      currentLevel: 3,
+      currentStreak: 5,
+    });
+
+    // 4. Seed UserStoryProgress (Completed stories)
+    // We don't necessarily have actual stories created, so we'll mock the rows 
+    // Wait, UserStoryProgress requires a valid storyId if there's a foreign key. 
+    // To be safe and avoid FK constraints if they exist, we just add the stats to the Progress.
+    // However, if we need actual completed stories for the dashboard, let's check if Story model has a hard FK constraint. 
+    // Assuming we can just inject a few mock stories into the DB:
+    const mockStoryIds = [uuidv4(), uuidv4()];
+    try {
+      await Story.bulkCreate([
+        { id: mockStoryIds[0], title: 'The Brave Little Fox', category: 'couragous', content: '...', ageGroup: '6-8', readingTime: 5, status: 'published', authorId: parentId },
+        { id: mockStoryIds[1], title: 'Mystery of the Whispering Woods', category: 'mystery', content: '...', ageGroup: '9-12', readingTime: 8, status: 'published', authorId: parentId }
+      ], { ignoreDuplicates: true });
+      
+      await UserStoryProgress.bulkCreate([
+        { userId: dummyChildId, storyId: mockStoryIds[0], status: 'completed', pointsEarned: 50, completedAt: new Date(Date.now() - 86400000) },
+        { userId: dummyChildId, storyId: mockStoryIds[1], status: 'completed', pointsEarned: 75, completedAt: new Date(Date.now() - 43200000) }
+      ], { ignoreDuplicates: true });
+    } catch(err) {
+      logger.warn('Could not seed UserStoryProgress due to constraint, skipping story relations', { err: err.message });
+    }
+
+    // 5. Seed ChildrenChallengeProgress
+    try {
+      const challengeMockId = uuidv4();
+      await ChildrenChallengeProgress.create({
+        id: uuidv4(),
+        userId: dummyChildId,
+        challengeId: challengeMockId, 
+        completed: false,
+        attempts: 3,
+        score: 0,
+      });
+      const challengeMockId2 = uuidv4();
+      await ChildrenChallengeProgress.create({
+        id: uuidv4(),
+        userId: dummyChildId,
+        challengeId: challengeMockId2, 
+        completed: true,
+        attempts: 1,
+        score: 100,
+      });
+    } catch(err) {
+      logger.warn('Could not seed ChildrenChallengeProgress', { err: err.message });
+    }
+
+    return res.status(201).json({ 
+      success: true, 
+      message: 'Default dummy child data seeded', 
+      data: { childId: dummyChildId }
+    });
+  } catch (error) {
+    logger.error('Error seeding parental data', { error: error.message });
+    return res.status(500).json({ success: false, message: 'Failed to seed dummy data' });
+  }
+};
+
 export default {
   createParentalLink,
   approveParentalLink,
@@ -462,4 +586,5 @@ export default {
   getChildActivity,
   updateBlockList,
   removeParentalLink,
+  seedDefaultParentalData,
 };
