@@ -1,4 +1,5 @@
 import { UserStoryProgress } from '../models/index.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
 
 /**
  * Get user's story progress
@@ -222,10 +223,16 @@ export const completeLesson = async (req, res) => {
 export const getProgressStats = async (req, res) => {
   try {
     const userId = req.user.id;
+    let allProgress = [];
 
-    const allProgress = await UserStoryProgress.findAll({
-      where: { userId },
-    });
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      allProgress = await db.collection('user_story_progresses').find({ userId }).toArray();
+    } else {
+      allProgress = await UserStoryProgress.findAll({
+        where: { userId },
+      });
+    }
 
     const stats = {
       totalAttempts: allProgress.length,

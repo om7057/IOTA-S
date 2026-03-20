@@ -1,9 +1,29 @@
 import { Group, GroupMember, User } from '../models/index.js';
 import { Op } from 'sequelize';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Create a new group
  */
+
+/**
+ * Helper: Convert group to response format
+ */
+function toGroupPayload(group) {
+  return {
+    id: group._id || group.id,
+    name: group.name,
+    description: group.description || '',
+    icon: group.icon,
+    isPublic: group.isPublic !== false,
+    memberCount: group.memberCount || 0,
+    creatorId: group.creatorId,
+    createdAt: group.createdAt,
+    updatedAt: group.updatedAt,
+  };
+}
+
 export const createGroup = async (req, res) => {
   try {
     const { name, description, type, category, icon, avatarUrl } = req.body;

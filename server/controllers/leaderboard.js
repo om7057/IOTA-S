@@ -1,6 +1,7 @@
 import { Leaderboard, User, QuizProgress, UserStoryProgress } from '../models/index.js';
 import { sequelize } from '../models/index.js';
 import { Op } from 'sequelize';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
 
 /**
  * Get leaderboard by period
@@ -9,6 +10,48 @@ export const getLeaderboard = async (req, res) => {
   try {
     const { period = 'all-time', limit = 50 } = req.query;
     const maxLimit = Math.min(parseInt(limit) || 50, 100);
+
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      const entries = await db
+        .collection('leaderboards')
+        .find({ period })
+        .sort({ totalPoints: -1 })
+        .limit(maxLimit)
+        .toArray();
+
+      const userIds = entries.map((entry) => entry.userId).filter(Boolean);
+      const users = await db
+        .collection('users')
+        .find({ id: { $in: userIds }, deletedAt: null })
+        .project({ _id: 0, id: 1, firstName: 1, lastName: 1, avatarUrl: 1, age: 1, email: 1 })
+        .toArray();
+
+      const userById = new Map(users.map((user) => [user.id, user]));
+
+      const normalized = entries.map((entry) => {
+        const user = userById.get(entry.userId) || null;
+        const username = user
+          ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Learner'
+          : 'Learner';
+
+        return {
+          ...entry,
+          user: user
+            ? {
+                ...user,
+                username,
+                avatar: user.avatarUrl || null,
+              }
+            : null,
+        };
+      });
+
+      return res.json({
+        success: true,
+        data: normalized,
+      });
+    }
 
     const entries = await Leaderboard.findAll({
       where: { period },
@@ -62,6 +105,54 @@ export const getUserRank = async (req, res) => {
   try {
     const { period = 'all-time' } = req.query;
     const userId = req.user.id;
+
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      const entry = await db.collection('leaderboards').findOne({ userId, period });
+
+      if (!entry) {
+        return res.json({
+          success: true,
+          data: {
+            userId,
+            period,
+            rank: null,
+            totalPoints: 0,
+            quizzesCompleted: 0,
+            storiesCompleted: 0,
+            journalCount: 0,
+            moodLogsCount: 0,
+            streak: 0,
+            user: null,
+          },
+        });
+      }
+
+      const user = await db
+        .collection('users')
+        .findOne(
+          { id: userId, deletedAt: null },
+          { projection: { _id: 0, id: 1, firstName: 1, lastName: 1, avatarUrl: 1, age: 1, email: 1 } }
+        );
+
+      const username = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Learner'
+        : 'Learner';
+
+      return res.json({
+        success: true,
+        data: {
+          ...entry,
+          user: user
+            ? {
+                ...user,
+                username,
+                avatar: user.avatarUrl || null,
+              }
+            : null,
+        },
+      });
+    }
 
     const entry = await Leaderboard.findOne({
       where: { userId, period },

@@ -1,5 +1,7 @@
 import { StoryAttempt, User, Story, Topic } from '../models/index.js';
 import { sequelize } from '../config/sequelize.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Create a story attempt (save quiz/story answer)
@@ -31,6 +33,48 @@ export const createStoryAttempt = async (req, res) => {
       });
     }
 
+    const now = new Date();
+
+    // Mongo-primary path
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      const attempt = {
+        _id: uuidv4(),
+        userId,
+        storyId,
+        topicId,
+        questionIndex,
+        userAnswer,
+        correctAnswer,
+        isCorrect,
+        scenarioContext: scenarioContext || null,
+        emotionDetected: emotionDetected || null,
+        emotionConfidence: emotionConfidence || 0,
+        emotionIntensity: emotionIntensity || 0,
+        timeSpent: timeSpent || 0,
+        aiRecommendation: aiRecommendation || {},
+        weaknessTopics: weaknessTopics || (isCorrect ? [] : [topicId]),
+        attemptsCount: 1,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.collection('story_attempts').insertOne(attempt);
+
+      const user = await db.collection('users').findOne({ _id: userId });
+      const story = await db.collection('stories').findOne({ _id: storyId });
+      const topic = topicId ? await db.collection('topics').findOne({ _id: topicId }) : null;
+
+      const populatedAttempt = {
+        ...attempt,
+        user: user ? { id: user._id, email: user.email, name: user.displayName } : null,
+        story: story ? { id: story._id, title: story.title, description: story.description } : null,
+        topic: topic ? { id: topic._id, name: topic.name } : null,
+      };
+
+      return res.status(201).json({ success: true, data: populatedAttempt });
+    }
+
+    // Sequelize fallback
     const attempt = await StoryAttempt.create({
       userId,
       storyId,

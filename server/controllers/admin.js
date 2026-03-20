@@ -1,10 +1,39 @@
 import { Story, Unit, Lesson, Challenge, User } from '../models/index.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * story management endpoints
  */
 
 // Create story
+
+/**
+ * Helper: Validate admin permissions
+ */
+async function isAdminUser(db, userId) {
+  const user = await db.collection('users').findOne({
+    _id: userId,
+    userType: 'admin',
+  });
+  return !!user;
+}
+
+/**
+ * Helper: Create audit log entry
+ */
+async function createAuditLog(db, adminId, action, targetType, targetId, changes = {}) {
+  return db.collection('audit_logs').insertOne({
+    _id: require('uuid').v4(),
+    adminId,
+    action,
+    targetType,
+    targetId,
+    changes,
+    createdAt: new Date(),
+  });
+}
+
 export const createStory = async (req, res) => {
   try {
     const { title, description, category, ageGroup, difficulty, coverImage, thumbEmoji } = req.body;

@@ -3,6 +3,8 @@ import { User } from '../models/User.js';
 import { logger } from '../utils/logger.js';
 import { validators } from '../utils/validators.js';
 import { Op } from 'sequelize';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Journal Controller
@@ -49,7 +51,37 @@ export const createJournal = async (req, res, next) => {
       return res.status(400).json({ error: 'Tags must be an array' });
     }
 
-    // Create journal
+    const now = new Date();
+
+    // Mongo-primary path
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      const journal = {
+        _id: uuidv4(),
+        userId: req.user.id,
+        title: title || null,
+        content,
+        emotion: emotion || null,
+        tags: tags || [],
+        prompt: prompt || null,
+        isPrivate: isPrivate !== undefined ? isPrivate : true,
+        entryDate: now,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      };
+      await db.collection('journals').insertOne(journal);
+      logger.info('Journal entry created (Mongo)', {
+        userId: req.user.id,
+        journalId: journal._id,
+      });
+      return res.status(201).json({
+        message: 'Journal entry created successfully',
+        journal,
+      });
+    }
+
+    // Sequelize fallback
     const journal = await Journal.create({
       userId: req.user.id,
       title: title || null,
@@ -58,7 +90,7 @@ export const createJournal = async (req, res, next) => {
       tags: tags || [],
       prompt: prompt || null,
       isPrivate: isPrivate !== undefined ? isPrivate : true,
-      entryDate: new Date(),
+      entryDate: now,
     });
 
     logger.info('Journal entry created', {

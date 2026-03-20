@@ -8,6 +8,8 @@ import {
   ChildrenChallengeProgress,
 } from '../models/index.js';
 import { logger } from '../utils/logger.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const formatUserName = (user) => {
   if (!user) return 'Unknown User';
@@ -21,6 +23,20 @@ const formatUserName = (user) => {
 /**
  * Create parental link - parent adds child
  */
+
+/**
+ * Helper: Validate parent-child relationship
+ */
+async function validateParentChildRelation(db, parentId, childId) {
+  const link = await db.collection('parent_child_links').findOne({
+    parentId,
+    childId,
+    isApproved: true,
+    deletedAt: null,
+  });
+  return !!link;
+}
+
 export const createParentalLink = async (req, res) => {
   try {
     const requesterId = req.user?.id;

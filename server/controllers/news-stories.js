@@ -2,6 +2,8 @@ import { NewsStory, Topic } from '../models/index.js';
 import { logger } from '../utils/logger.js';
 import { generateQuizFromStory } from '../services/quizGenerator.js';
 import { saveGeneratedQuiz } from './quiz.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * News Stories Controller
@@ -11,6 +13,27 @@ import { saveGeneratedQuiz } from './quiz.js';
  */
 
 // Get all news stories
+
+/**
+ * Helper: Create news article object
+ */
+function createNewsArticle(title, content, source, author, imageUrl = null) {
+  const now = new Date();
+  return {
+    _id: require('uuid').v4(),
+    title,
+    content,
+    source,
+    author,
+    imageUrl,
+    viewsCount: 0,
+    likesCount: 0,
+    commentsCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export const getAllNewsStories = async (req, res) => {
   try {
     const newsStories = await NewsStory.findAll({

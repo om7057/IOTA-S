@@ -2,6 +2,10 @@ import { User } from '../models/User.js';
 import { logger } from '../utils/logger.js';
 import { validators } from '../utils/validators.js';
 import { Op, Sequelize } from 'sequelize';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+
+const buildDisplayName = (firstName, lastName) => `${firstName || ''} ${lastName || ''}`.trim();
+const resolveUserType = (age, explicitType) => explicitType || (age >= 13 ? 'teenager' : 'child');
 
 /**
  * User Controller
@@ -32,14 +36,47 @@ export const listUsers = async (req, res, next) => {
     const sortFields = ['createdAt', 'firstName', 'lastName', 'currentStars', 'age'];
     const sortField = sortFields.includes(sort) ? sort : 'createdAt';
 
-    // Get total count and paginated results
-    const { count, rows } = await User.findAndCountAll({
-      attributes: ['id', 'firstName', 'lastName', 'displayName', 'userType', 'avatarUrl', 'currentStars'],
-      where: { deletedAt: null }, // Exclude soft-deleted users
-      order: [[sortField, 'DESC']],
-      limit: limitNum,
-      offset,
-    });
+    let count = 0;
+    let rows = [];
+
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      const usersCollection = db.collection('users');
+      const query = { deletedAt: null };
+
+      count = await usersCollection.countDocuments(query);
+      rows = await usersCollection
+        .find(query)
+        .sort({ [sortField]: -1 })
+        .skip(offset)
+        .limit(limitNum)
+        .project({
+          _id: 0,
+          id: 1,
+          firstName: 1,
+          lastName: 1,
+          userType: 1,
+          avatarUrl: 1,
+          currentStars: 1,
+        })
+        .toArray();
+
+      rows = rows.map((user) => ({
+        ...user,
+        displayName: buildDisplayName(user.firstName, user.lastName),
+      }));
+    } else {
+      const result = await User.findAndCountAll({
+        attributes: ['id', 'firstName', 'lastName', 'displayName', 'userType', 'avatarUrl', 'currentStars'],
+        where: { deletedAt: null },
+        order: [[sortField, 'DESC']],
+        limit: limitNum,
+        offset,
+      });
+
+      count = result.count;
+      rows = result.rows;
+    }
 
     const totalPages = Math.ceil(count / limitNum);
 
@@ -78,11 +115,31 @@ export const getCurrentUser = async (req, res, next) => {
       });
     }
 
-    const user = await User.findByPk(req.user.id, {
-      attributes: {
-        exclude: ['passwordHash', 'deletedAt'],
-      },
-    });
+    let user;
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      user = await db.collection('users').findOne(
+        { id: req.user.id, deletedAt: null },
+        {
+          projection: {
+            _id: 0,
+            passwordHash: 0,
+            deletedAt: 0,
+          },
+        }
+      );
+
+      if (user) {
+        user.displayName = buildDisplayName(user.firstName, user.lastName);
+        user.userType = resolveUserType(user.age, user.userType);
+      }
+    } else {
+      user = await User.findByPk(req.user.id, {
+        attributes: {
+          exclude: ['passwordHash', 'deletedAt'],
+        },
+      });
+    }
 
     if (!user) {
       return res.status(404).json({
@@ -115,9 +172,36 @@ export const getUserById = async (req, res, next) => {
       });
     }
 
-    const user = await User.findByPk(userId, {
-      attributes: ['id', 'firstName', 'lastName', 'displayName', 'userType', 'avatarUrl', 'currentStars', 'createdAt'],
-    });
+    let user;
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      user = await db.collection('users').findOne(
+        { id: userId, deletedAt: null },
+        {
+          projection: {
+            _id: 0,
+            id: 1,
+            firstName: 1,
+            lastName: 1,
+            userType: 1,
+            avatarUrl: 1,
+            currentStars: 1,
+            createdAt: 1,
+            age: 1,
+          },
+        }
+      );
+
+      if (user) {
+        user.displayName = buildDisplayName(user.firstName, user.lastName);
+        user.userType = resolveUserType(user.age, user.userType);
+        delete user.age;
+      }
+    } else {
+      user = await User.findByPk(userId, {
+        attributes: ['id', 'firstName', 'lastName', 'displayName', 'userType', 'avatarUrl', 'currentStars', 'createdAt'],
+      });
+    }
 
     if (!user) {
       return res.status(404).json({
@@ -163,7 +247,13 @@ export const updateUser = async (req, res, next) => {
     }
 
     // Find user
-    const user = await User.findByPk(userId);
+    let user;
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      user = await db.collection('users').findOne({ id: userId, deletedAt: null });
+    } else {
+      user = await User.findByPk(userId);
+    }
     if (!user) {
       return res.status(404).json({
         error: 'User not found',
@@ -171,13 +261,15 @@ export const updateUser = async (req, res, next) => {
     }
 
     // Validate fields before update
+    const updates = {};
+
     if (firstName !== undefined) {
       if (!validators.isValidName(firstName)) {
         return res.status(400).json({
           error: 'Invalid first name',
         });
       }
-      user.firstName = firstName;
+      updates.firstName = firstName;
     }
 
     if (lastName !== undefined) {
@@ -186,7 +278,7 @@ export const updateUser = async (req, res, next) => {
           error: 'Invalid last name',
         });
       }
-      user.lastName = lastName;
+      updates.lastName = lastName;
     }
 
     if (age !== undefined) {
@@ -195,7 +287,8 @@ export const updateUser = async (req, res, next) => {
           error: 'Age must be between 5 and 19',
         });
       }
-      user.age = parseInt(age);
+      updates.age = parseInt(age);
+      updates.userType = resolveUserType(parseInt(age));
     }
 
     if (gender !== undefined) {
@@ -204,7 +297,7 @@ export const updateUser = async (req, res, next) => {
           error: 'Invalid gender. Must be: male, female, other, prefer-not',
         });
       }
-      user.gender = gender;
+      updates.gender = gender;
     }
 
     if (avatarUrl !== undefined) {
@@ -213,11 +306,18 @@ export const updateUser = async (req, res, next) => {
           error: 'Invalid avatar URL',
         });
       }
-      user.avatarUrl = avatarUrl;
+      updates.avatarUrl = avatarUrl;
     }
 
-    // Save changes
-    await user.save();
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      updates.updatedAt = new Date();
+      await db.collection('users').updateOne({ id: userId }, { $set: updates });
+      user = { ...user, ...updates };
+    } else {
+      Object.assign(user, updates);
+      await user.save();
+    }
 
     logger.info('User profile updated', { userId });
 
@@ -269,15 +369,28 @@ export const deleteUser = async (req, res, next) => {
     }
 
     // Find and soft delete user
-    const user = await User.findByPk(userId);
+    let user;
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      user = await db.collection('users').findOne({ id: userId, deletedAt: null });
+    } else {
+      user = await User.findByPk(userId);
+    }
     if (!user) {
       return res.status(404).json({
         error: 'User not found',
       });
     }
 
-    // Soft delete (sets deletedAt)
-    await user.destroy();
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      await db.collection('users').updateOne(
+        { id: userId },
+        { $set: { deletedAt: new Date(), updatedAt: new Date() } }
+      );
+    } else {
+      await user.destroy();
+    }
 
     logger.info('User account deleted', { userId });
 
@@ -307,7 +420,13 @@ export const getUserProgress = async (req, res, next) => {
     }
 
     // Find user
-    const user = await User.findByPk(userId);
+    let user;
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      user = await db.collection('users').findOne({ id: userId, deletedAt: null });
+    } else {
+      user = await User.findByPk(userId);
+    }
     if (!user) {
       return res.status(404).json({
         error: 'User not found',
@@ -382,7 +501,13 @@ export const updateUserAge = async (req, res, next) => {
     }
 
     // Find user
-    const user = await User.findByPk(userId);
+    let user;
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      user = await db.collection('users').findOne({ id: userId, deletedAt: null });
+    } else {
+      user = await User.findByPk(userId);
+    }
     if (!user) {
       return res.status(404).json({
         error: 'User not found',
@@ -390,11 +515,22 @@ export const updateUserAge = async (req, res, next) => {
     }
 
     // Update age and userType
-    user.age = parseInt(age);
-    user.userType = age >= 13 ? 'teenager' : 'child';
+    const nextAge = parseInt(age);
+    const nextUserType = nextAge >= 13 ? 'teenager' : 'child';
 
-    // Save changes
-    await user.save();
+    if (isMongoPrimaryEnabled()) {
+      const db = getMongoDb();
+      await db.collection('users').updateOne(
+        { id: userId },
+        { $set: { age: nextAge, userType: nextUserType, updatedAt: new Date() } }
+      );
+      user.age = nextAge;
+      user.userType = nextUserType;
+    } else {
+      user.age = nextAge;
+      user.userType = nextUserType;
+      await user.save();
+    }
 
     logger.info('User age updated', { userId, age, userType: user.userType });
 

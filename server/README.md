@@ -267,7 +267,20 @@ npm run db:seed:all
 
 # Reset database (⚠️ warning: deletes all data)
 npm run db:reset
+
+# Migrate all PostgreSQL tables to MongoDB Atlas
+npm run migrate:postgres-to-mongo
+
+# Re-run migration and replace existing Mongo data
+npm run migrate:postgres-to-mongo -- --drop
 ```
+
+### Docker Persistence Note
+
+- `docker compose down` keeps your PostgreSQL volume data.
+- `docker compose down -v` deletes named volumes (`postgres_data`, `redis_data`) and permanently removes local DB data.
+- If you want local Postgres persistence, avoid using `-v`.
+- If you want cloud persistence, run Mongo migration and store data in Atlas.
 
 ## 📝 Environment Variables
 
@@ -280,6 +293,8 @@ npm run db:reset
 | `DB_NAME` | Yes | `iota_db` | Database name |
 | `DB_USER` | Yes | `postgres` | Database user |
 | `DB_PASSWORD` | Yes | `` | Database password |
+| `MONGODB_URI` | No | `` | MongoDB Atlas connection URI for migration |
+| `MONGODB_DB_NAME` | No | `iota_db` | Target MongoDB database name |
 | `JWT_SECRET` | Yes | (fallback) | JWT secret key |
 | `JWT_REFRESH_SECRET` | Yes | (fallback) | Refresh token secret |
 | `GOOGLE_CLIENT_ID` | No | `` | Google OAuth client ID |

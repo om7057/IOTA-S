@@ -1,6 +1,26 @@
 import { Thread, ThreadReply, User, Group } from '../models/index.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 // Get all threads in a group
+
+/**
+ * Helper: Create forum post object
+ */
+function createForumPost(userId, title, content, tags = []) {
+  return {
+    _id: require('uuid').v4(),
+    userId,
+    title,
+    content,
+    tags,
+    viewsCount: 0,
+    repliesCount: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
 export const getGroupThreads = async (req, res) => {
   try {
     const { groupId } = req.params;

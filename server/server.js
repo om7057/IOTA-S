@@ -3,6 +3,7 @@ import cors from 'cors';
 import environment from './config/environment.js';
 import { logger } from './utils/logger.js';
 import { connectDB } from './models/index.js';
+import { connectMongo, isMongoPrimaryEnabled } from './config/mongo.js';
 import { requestLogger, errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
@@ -115,9 +116,21 @@ app.use(errorHandler);
 
 const startServer = async () => {
   try {
-    // Connect to database
-    logger.info('Connecting to database...');
-    await connectDB();
+    // Connect to MongoDB if configured
+    const mongoDb = await connectMongo();
+    if (mongoDb) {
+      logger.info('MongoDB connection ready');
+    } else {
+      logger.info('MongoDB URI not configured, skipping Mongo connection');
+    }
+
+    // Connect to PostgreSQL unless Mongo is explicitly configured as primary
+    if (!isMongoPrimaryEnabled()) {
+      logger.info('Connecting to PostgreSQL database...');
+      await connectDB();
+    } else {
+      logger.info('USE_MONGO_PRIMARY=true, skipping PostgreSQL startup connection');
+    }
 
     // Start plain HTTP API server (websocket disabled)
     app.listen(environment.PORT, () => {

@@ -1,4 +1,6 @@
 import { ChatMessage, User } from '../models/index.js';
+import { getMongoDb, isMongoPrimaryEnabled } from '../config/mongo.js';
+import { v4 as uuidv4 } from 'uuid';
 
 // Mock AI responses for chatbot
 const getBotResponse = (userMessage, sentiment) => {
@@ -54,6 +56,22 @@ const getBotResponse = (userMessage, sentiment) => {
 };
 
 // Get all chat messages for user
+
+/**
+ * Helper: Store chat message in history
+ */
+async function storeChatMessage(db, userId, role, message, metadata = {}) {
+  const now = new Date();
+  return db.collection('chatbot_messages').insertOne({
+    _id: require('uuid').v4(),
+    userId,
+    role, // 'user' | 'assistant'
+    message,
+    metadata,
+    createdAt: now,
+  });
+}
+
 export const getUserChatHistory = async (req, res) => {
   try {
     const userId = req.user?.id || req.params.userId;

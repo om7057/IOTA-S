@@ -46,6 +46,13 @@ const environment = {
   // Redis
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
 
+  // MongoDB
+  MONGODB: {
+    uri: process.env.MONGODB_URI || '',
+    dbName: process.env.MONGODB_DB_NAME || process.env.DB_NAME || 'iota_db',
+    useAsPrimary: process.env.USE_MONGO_PRIMARY === 'true',
+  },
+
   // Email
   SMTP: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
