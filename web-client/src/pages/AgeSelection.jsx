@@ -12,7 +12,7 @@ const AgeSelection = () => {
   const handleAgeSelect = async (age) => {
     setSelectedAge(age);
     setLoading(true);
-    
+
     try {
       // Update age in backend
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -30,7 +30,7 @@ const AgeSelection = () => {
         localStorage.setItem('userAge', age);
         const updatedUser = { ...user, age };
         localStorage.setItem('authUser', JSON.stringify(updatedUser));
-        
+
         toast.success(`Welcome! You're all set! 🎉`);
         // Now redirect to home where user can start using the app
         window.location.href = '/';
@@ -66,17 +66,16 @@ const AgeSelection = () => {
           <button
             onClick={() => handleAgeSelect(10)}
             disabled={loading}
-            className={`p-6 sm:p-7 rounded-3xl border transition-all hover:-translate-y-0.5 ${
-              selectedAge === 10 || (selectedAge && selectedAge < 13)
+            className={`p-6 sm:p-7 rounded-3xl border transition-all hover:-translate-y-0.5 ${selectedAge === 10 || (selectedAge && selectedAge < 13)
                 ? 'border-emerald-300 bg-emerald-50/70 shadow-lg shadow-emerald-100/80'
                 : 'border-slate-200 bg-white/90 hover:border-emerald-200 shadow-md'
-            } disabled:opacity-50`}
+              } disabled:opacity-50`}
           >
             <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 text-2xl flex items-center justify-center mb-4">C</div>
             <h2 className="text-2xl font-semibold text-slate-900 mb-2">
               I'm a Kid
             </h2>
-            <p className="text-slate-600 mb-4">Ages 8-12</p>
+            <p className="text-slate-600 mb-4">Ages 7-12</p>
             <div className="text-sm text-slate-700 space-y-1">
               <p>✓ Mood Tracking</p>
               <p>✓ My Journal</p>
@@ -89,17 +88,16 @@ const AgeSelection = () => {
           <button
             onClick={() => handleAgeSelect(16)}
             disabled={loading}
-            className={`p-6 sm:p-7 rounded-3xl border transition-all hover:-translate-y-0.5 ${
-              selectedAge === 16 || (selectedAge && selectedAge >= 13)
+            className={`p-6 sm:p-7 rounded-3xl border transition-all hover:-translate-y-0.5 ${selectedAge === 16 || (selectedAge && selectedAge >= 13)
                 ? 'border-indigo-300 bg-indigo-50/70 shadow-lg shadow-indigo-100/80'
                 : 'border-slate-200 bg-white/90 hover:border-indigo-200 shadow-md'
-            } disabled:opacity-50`}
+              } disabled:opacity-50`}
           >
             <div className="w-14 h-14 mx-auto rounded-2xl bg-indigo-100 text-2xl flex items-center justify-center mb-4">T</div>
             <h2 className="text-2xl font-semibold text-slate-900 mb-2">
               I'm a Teen
             </h2>
-            <p className="text-slate-600 mb-4">Ages 13+</p>
+            <p className="text-slate-600 mb-4">13 and above</p>
             <div className="text-sm text-slate-700 space-y-1">
               <p>✓ All Kid Features</p>
               <p>✓ Express Yourself</p>

@@ -617,26 +617,48 @@ export const handleGoogleCallback = async (req, res, next) => {
       });
     }
 
-    // Find or create user
+    // Find or create user (paranoid: false to also match soft-deleted records
+    // so we never hit a unique-constraint error on email/googleId)
     user = await User.findOne({
       where: { googleId: userGoogleId },
+      paranoid: false,
     });
 
     if (!user) {
-      // New user - create account
-      user = await User.create({
-        email: userEmail,
-        firstName: userFirstName,
-        lastName: userLastName,
-        googleId: userGoogleId,
-        avatarUrl: userPicture,
-        oauthProvider: 'google',
+      // No user with this googleId — check if one exists with the same email
+      user = await User.findOne({
+        where: { email: userEmail },
+        paranoid: false,
       });
 
-      logger.info('New user created via Google OAuth', { userId: user.id, email: userEmail, googleId: userGoogleId });
-    } else if (user.email !== userEmail) {
-      // Update email if changed
-      user.email = userEmail;
+      if (user) {
+        // Existing user (possibly soft-deleted) → link Google & restore
+        user.googleId = userGoogleId;
+        user.avatarUrl = user.avatarUrl || userPicture;
+        user.oauthProvider = 'google';
+        user.deletedAt = null; // restore if soft-deleted
+        await user.save();
+        logger.info('Linked Google account to existing user', { userId: user.id, email: userEmail });
+      } else {
+        // Brand-new user → create account
+        user = await User.create({
+          email: userEmail,
+          firstName: userFirstName,
+          lastName: userLastName,
+          googleId: userGoogleId,
+          avatarUrl: userPicture,
+          oauthProvider: 'google',
+        });
+        logger.info('New user created via Google OAuth', { userId: user.id, email: userEmail, googleId: userGoogleId });
+      }
+    } else {
+      // Found by googleId — restore if soft-deleted, update email if changed
+      if (user.deletedAt) {
+        user.deletedAt = null;
+      }
+      if (user.email !== userEmail) {
+        user.email = userEmail;
+      }
       await user.save();
     }
 
