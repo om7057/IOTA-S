@@ -139,6 +139,20 @@
   user-select: none;
 }
 
+.anonymous-toggle.anonymous-always {
+  cursor: default !important;
+  background: rgba(108, 92, 231, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(108, 92, 231, 0.3);
+  color: #6c5ce7;
+  font-size: 0.95rem;
+}
+
+.anonymous-toggle.anonymous-always span {
+  font-weight: 600;
+}
+
 .anonymous-toggle input {
   width: 18px;
   height: 18px;

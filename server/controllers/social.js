@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 /**
  * Helper: Resolve teen display name  
  */
-function getTeen Name(userId) {
+function getTeenName(userId) {
   if (userId && userId !== 'ANONYMOUS' && !userId.startsWith('Teen#')) {
     return userId;
   }

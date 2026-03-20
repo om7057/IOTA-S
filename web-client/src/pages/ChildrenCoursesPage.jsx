@@ -62,7 +62,7 @@ const ChildrenCoursesPage = () => {
 
   const categories = [
     { id: 'all', label: 'All Courses', icon: '📚' },
-    { id: 'body-safety', label: 'Sexual Abuse', icon: '🛡️' },
+    { id: 'body-safety', label: 'Body Safety & Boundaries', icon: '🛡️' },
     { id: 'relationships', label: 'Child Labour', icon: '⚠️' },
     { id: 'boundaries', label: 'Child Marriage', icon: '💍' },
     { id: 'general', label: 'Online Safety', icon: '📱' },

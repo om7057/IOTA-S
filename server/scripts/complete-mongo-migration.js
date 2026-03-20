@@ -31,7 +31,7 @@ async function migrateSocial() {
 /**
  * Helper: Resolve teen display name  
  */
-function getTeen Name(userId) {
+function getTeenName(userId) {
   if (userId && userId !== 'ANONYMOUS' && !userId.startsWith('Teen#')) {
     return userId;
   }

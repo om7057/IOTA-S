@@ -34,6 +34,7 @@ const Sidebar = ({ onClose, isMobile }) => {
     { name: "Teen Mode", section: true },
     { name: "AI Friend", path: "/teen/chatbot", icon: <MessageCircle className="w-5 h-5" /> },
     { name: "Forums", path: "/teen/forums", icon: <MessageSquare className="w-5 h-5" /> },
+    { name: "Specialists", path: "/teen/psychiatrist", icon: <Heart className="w-5 h-5" /> },
   ];
 
   const sidebarItems = userType === 'child' ? childrenItems : teenagerItems;

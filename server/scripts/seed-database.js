@@ -11,6 +11,9 @@ import { seedGroups } from '../seeds/groups.js';
 import { seedChildrenCourses } from '../seeds/children-courses.js';
 import { seedNewsStories } from '../seeds/news-stories.js';
 import { seedStoryAttempts } from '../seeds/story-attempts.js';
+import seedPsychiatrists from '../seeds/psychiatrists.js';
+import { seedPosts } from '../seeds/posts.js';
+import { seedJournals } from '../seeds/journals.js';
 import { sequelize } from '../config/sequelize.js';
 
 config();
@@ -41,6 +44,15 @@ const main = async () => {
     
     console.log('\n🎯 Seeding story attempts (child quiz tracking)...');
     await seedStoryAttempts();
+    
+    console.log('\n🧑‍⚕️ Seeding psychiatrists (teen mental health support)...');
+    await seedPsychiatrists();
+    
+    console.log('\n💬 Seeding social feed posts (teen community)...');
+    await seedPosts();
+    
+    console.log('\n📔 Seeding journal entries (teen self-reflection)...');
+    await seedJournals();
     
     console.log('\n✅ Database seeding complete!');
     process.exit(0);

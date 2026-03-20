@@ -45,6 +45,8 @@ import ChildrenChallenge from './ChildrenChallenge.js';
 import ChildrenChallengeOption from './ChildrenChallengeOption.js';
 import ChildrenProgress from './ChildrenProgress.js';
 import ChildrenChallengeProgress from './ChildrenChallengeProgress.js';
+import Psychiatrist from './Psychiatrist.js';
+import PsychiatristChat from './PsychiatristChat.js';
 
 // Export all models AFTER they're imported
 export { User };
@@ -85,6 +87,8 @@ export { ChildrenChallenge };
 export { ChildrenChallengeOption };
 export { ChildrenProgress };
 export { ChildrenChallengeProgress };
+export { Psychiatrist };
+export { PsychiatristChat };
 
 // Establish relationships
 // User relationships
@@ -275,6 +279,13 @@ ChildrenChallengeProgress.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 ChildrenChallenge.hasMany(ChildrenChallengeProgress, { as: 'playerProgress', foreignKey: 'challengeId' });
 ChildrenChallengeProgress.belongsTo(ChildrenChallenge, { as: 'challenge', foreignKey: 'challengeId' });
 
+// ==================== Psychiatrist Support Relationships ====================
+User.hasMany(PsychiatristChat, { as: 'psychiatristChats', foreignKey: 'userId' });
+PsychiatristChat.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+Psychiatrist.hasMany(PsychiatristChat, { as: 'chats', foreignKey: 'psychiatristId' });
+PsychiatristChat.belongsTo(Psychiatrist, { as: 'psychiatrist', foreignKey: 'psychiatristId' });
+
 const db = {
   User,
   RefreshToken,
@@ -313,6 +324,8 @@ const db = {
   ChildrenChallengeOption,
   ChildrenProgress,
   ChildrenChallengeProgress,
+  Psychiatrist,
+  PsychiatristChat,
 };
 
 export const connectDB = async () => {
